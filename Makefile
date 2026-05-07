@@ -15,8 +15,14 @@ debug:
 
 tsan:
 
-test:
+test: build/test_tiny_ptr
+	./build/test_tiny_ptr
+
+build/test_tiny_ptr: tests/test_tiny_ptr.cpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS_DEBUG) -I. $< -o $@ -lgtest -lgtest_main -lpthread
 
 bench:
 
 clean:
+	rm -rf build

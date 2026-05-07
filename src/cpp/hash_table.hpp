@@ -7,21 +7,8 @@
 #include <string_view>
 #include <vector>
 #include "quill/Logger.h"
+#include "src/cpp/build_stats.hpp"
 #include "src/cpp/tiny_ptr.hpp"
-
-struct BuildStats {
-    size_t loaded           = 0;
-    size_t skip_too_long    = 0;
-    size_t skip_empty       = 0;
-    size_t skip_null_byte   = 0;
-    size_t skip_duplicate   = 0;
-    size_t max_rejected_len = 0;
-    std::vector<std::string> sample_null_byte; // up to 5 examples, shown with [NUL]
-
-    size_t total_skipped() const {
-        return skip_too_long + skip_empty + skip_null_byte + skip_duplicate;
-    }
-};
 
 struct Slot {
     uint8_t  key[16];

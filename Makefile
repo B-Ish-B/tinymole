@@ -15,15 +15,25 @@ debug:
 
 tsan:
 
-test: build/test_tiny_ptr build/test_hash_table
+test: build/test_tiny_ptr build/test_hash_table build/test_hash_table_naive build/test_hash_table_stdmap
 	./build/test_tiny_ptr
 	./build/test_hash_table
+	./build/test_hash_table_naive
+	./build/test_hash_table_stdmap
 
 build/test_tiny_ptr: tests/test_tiny_ptr.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $< -o $@ -lgtest -lgtest_main -lpthread
 
 build/test_hash_table: tests/test_hash_table.cpp src/cpp/hash_table.cpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
+
+build/test_hash_table_naive: tests/test_hash_table_naive.cpp src/cpp/hash_table_naive.cpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
+
+build/test_hash_table_stdmap: tests/test_hash_table_stdmap.cpp src/cpp/hash_table_stdmap.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 

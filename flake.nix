@@ -1,33 +1,36 @@
 {
   description = "CSC255 Password Cracker";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-  outputs = { self, nixpkgs }:
-  let
-    system = builtins.currentSystem;
-    pkgs = nixpkgs.legacyPackages.${system};
-  in {
-    devShells.${system}.default = pkgs.mkShell {
-      packages = with pkgs; [
-        gcc
-        gnumake
-        pkg-config
-        openssl
-        curl
-        python311
-        uv
-        linuxPackages.perf
-        valgrind
-        hyperfine
-        google-benchmark
-        gtest
-        quill-log
-      ];
-
-      shellHook = ''
-        echo "CSC255 dev environment ready"
-      '';
-    };
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
+
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+        linuxOnly = if pkgs.stdenv.isLinux then [ pkgs.linuxPackages.perf pkgs.valgrind ] else [];
+      in {
+        devShells.default = pkgs.mkShell {
+          packages = with pkgs; [
+            gcc
+            gnumake
+            pkg-config
+            openssl
+            curl
+            python311
+            uv
+            hyperfine
+            gbenchmark
+            gtest
+            quill-log
+          ] ++ linuxOnly;
+
+          shellHook = ''
+            echo "CSC255 dev environment ready"
+          '';
+        };
+      }
+    );
 }

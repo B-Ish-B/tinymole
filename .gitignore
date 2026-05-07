@@ -1,0 +1,14 @@
+data/rockyou.txt
+
+logs/cracker.log
+
+.venv/
+__pycache__/
+*.pyc
+
+build/
+*.o
+*.a
+cracker
+cracker_tinyptr
+cracker_stdmap

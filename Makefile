@@ -15,12 +15,17 @@ debug:
 
 tsan:
 
-test: build/test_tiny_ptr
+test: build/test_tiny_ptr build/test_hash_table
 	./build/test_tiny_ptr
+	./build/test_hash_table
 
 build/test_tiny_ptr: tests/test_tiny_ptr.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $< -o $@ -lgtest -lgtest_main -lpthread
+
+build/test_hash_table: tests/test_hash_table.cpp src/cpp/hash_table.cpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
 bench:
 

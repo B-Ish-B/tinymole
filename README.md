@@ -4,7 +4,9 @@ This project builds a high-performance password cracker that demonstrates three 
 
 ## Setup
 
-### One-time machine setup
+### Linux and macOS
+
+One-time machine setup:
 
 ```bash
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
@@ -12,7 +14,7 @@ echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 eval "$(direnv hook bash)"   # or zsh
 ```
 
-### First-time setup after cloning
+First-time setup after cloning:
 
 ```bash
 git clone <repo>
@@ -24,6 +26,32 @@ make test
 ```
 
 After the one-time `direnv allow`, every subsequent `cd` into the project directory activates the environment automatically.
+
+### Windows
+
+Nix does not run natively on Windows. You need WSL2 with a Linux distribution (Ubuntu 22.04 or later is recommended).
+
+One-time WSL2 setup (run in PowerShell as Administrator):
+
+```powershell
+wsl --install
+```
+
+Restart your machine, then open your WSL2 terminal and install Nix:
+
+```bash
+sh <(curl -L https://nixos.org/nix/install) --daemon
+```
+
+Close and reopen the terminal, then install direnv:
+
+```bash
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+nix profile install nixpkgs#direnv
+eval "$(direnv hook bash)"
+```
+
+From this point the setup is identical to Linux. Clone the repo inside your WSL2 home directory (not under `/mnt/c/`) and run the first-time setup steps above. All subsequent work should be done from within WSL2.
 
 ## Makefile Targets
 

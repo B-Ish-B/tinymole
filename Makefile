@@ -5,7 +5,7 @@ CXXFLAGS_DEBUG = -std=c++17 -O0 -g -fsanitize=address,undefined
 
 CXXFLAGS_TSAN = -std=c++17 -O1 -g -fsanitize=thread
 
-LDFLAGS = -lquill -lssl -lcrypto -lpthread
+LDFLAGS = -lssl -lcrypto -lpthread
 
 .PHONY: all debug tsan test bench clean
 

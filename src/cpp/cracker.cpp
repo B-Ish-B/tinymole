@@ -26,20 +26,28 @@ void worker(
     const HashTable&                table,
     const PasswordPool&             pool,
     const uint8_t*                  target_hash,
+    const EVP_MD*                   md,
     std::atomic<bool>&              found,
     std::string&                    result
 ) {
+    const int hash_len = EVP_MD_get_size(md);
+    std::vector<uint8_t> hash(hash_len);
+    unsigned int hlen = static_cast<unsigned int>(hash_len);
+
+    // Allocate once; reuse across every candidate to avoid per-iteration
+    // heap traffic from EVP_Digest's internal alloc/free cycle.
+    auto ctx_del = [](EVP_MD_CTX* c) { EVP_MD_CTX_free(c); };
+    std::unique_ptr<EVP_MD_CTX, decltype(ctx_del)> ctx(EVP_MD_CTX_new(), ctx_del);
+
     for (const auto& candidate : partition) {
         if (found.load(std::memory_order_relaxed)) return;
 
-        uint8_t hash[16];
-        unsigned int hlen = 16;
-        EVP_Digest(candidate.data(), candidate.size(), hash, &hlen, EVP_md5(), nullptr);
+        EVP_DigestInit_ex(ctx.get(), md, nullptr);
+        EVP_DigestUpdate(ctx.get(), candidate.data(), candidate.size());
+        EVP_DigestFinal_ex(ctx.get(), hash.data(), &hlen);
 
-        if (std::memcmp(hash, target_hash, 16) == 0) {
-            // Retrieve plaintext from the table. If the candidate is a generated
-            // variant not in the table, fall back to the candidate string itself.
-            auto match = table.lookup(hash, pool.base());
+        if (std::memcmp(hash.data(), target_hash, hash_len) == 0) {
+            auto match = table.lookup(hash.data(), pool.base());
             result = match.empty() ? candidate : std::string(match);
             found.store(true, std::memory_order_relaxed);
             return;
@@ -53,6 +61,7 @@ std::string crack(
     const PasswordPool&             pool,
     const uint8_t*                  target_hash,
     int                             num_threads,
+    const EVP_MD*                   md,
     quill::Logger*                  logger
 ) {
     auto t_start = std::chrono::steady_clock::now();
@@ -74,6 +83,7 @@ std::string crack(
             std::cref(table),
             std::cref(pool),
             target_hash,
+            md,
             std::ref(found),
             std::ref(results[i]));
     }

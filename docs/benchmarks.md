@@ -130,8 +130,71 @@ Key observations:
 
 ---
 
+## Benchmark 3: Thread Scaling (cracker)
+
+### What it measures
+
+End-to-end crack time for a target near the end of the candidate list
+(position 999,000 of 1,000,000). This exercises the full search path:
+MD5 per candidate, hash table lookup on hit, atomic early-exit on match.
+Table build time and candidate load time are excluded; only the crack()
+wall time is recorded.
+
+### Target
+
+Password: bunnyxx (line 999,000 of rockyou_1m.txt)
+MD5: 86d23dd6cc9e3c345c0baea4b0feb0d7
+
+### Conditions
+
+- CPU governor set to performance (cpupower frequency-set --governor performance)
+- taskset per run: 1 thread = -c 0, 2 threads = -c 0,2, 4 threads = -c 0,1,2,3
+- Pinning for 2 threads uses one logical thread per physical core to isolate
+  the real core-to-core speedup from hyperthreading
+
+### How to run
+
+```bash
+HASH=86d23dd6cc9e3c345c0baea4b0feb0d7
+WL=data/rockyou_1m.txt
+
+taskset -c 0       ./build/cracker --hash $HASH --wordlist $WL --threads 1 --log-path /dev/null
+taskset -c 0,2     ./build/cracker --hash $HASH --wordlist $WL --threads 2 --log-path /dev/null
+taskset -c 0,1,2,3 ./build/cracker --hash $HASH --wordlist $WL --threads 4 --log-path /dev/null
+```
+
+Raw output saved to results/thread_scaling_1m.txt.
+
+### Development results (1M subset, 2026-05-07)
+
+Three runs each; median reported.
+
+| Threads | Run 1 | Run 2 | Run 3 | Median | Speedup vs 1T |
+|---|---|---|---|---|---|
+| 1 | 434.0 ms | 363.0 ms | 388.8 ms | 388.8 ms | 1.00x |
+| 2 | 323.8 ms | 317.5 ms | 323.7 ms | 323.7 ms | 1.20x |
+| 4 | 221.6 ms | 228.7 ms | 248.4 ms | 228.7 ms | 1.70x |
+
+Key observations:
+- 1 to 2 threads (two physical cores): 1.20x speedup. Lower than the theoretical
+  2x because the 48 MB table far exceeds L3 (6 MB), making lookup
+  memory-bandwidth bound. Both cores compete for DRAM bandwidth rather than
+  running independently.
+- 2 to 4 threads (adding hyperthreads): 1.42x additional gain. HT allows each
+  physical core to issue memory requests from two logical threads simultaneously,
+  partially hiding DRAM latency. The gain is larger than typical HT benefit
+  precisely because the workload is latency-bound on memory accesses.
+- Combined 1 to 4 threads: 1.70x. This is the ceiling on this hardware for a
+  memory-bandwidth-bound workload. A compute-bound workload would scale closer
+  to 4x.
+- These numbers will improve on the full 14.3M dataset run because the table will
+  be even larger, making the latency-hiding benefit of additional threads more
+  pronounced.
+
+---
+
 ## Next Steps
 
 - Run full 14.3M entry benchmarks and save to results/perf_full.txt
-- Thread scaling benchmarks (1, 2, 4 threads) once cracker is implemented
+- Thread scaling benchmarks on full rockyou.txt
 - Generate graphs from results/ using src/python/plot_results.py

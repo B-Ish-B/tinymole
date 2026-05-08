@@ -4,28 +4,35 @@ CPU governor: performance
 taskset: 1T=-c 0, 2T=-c 0,2, 4T=-c 0,1,2,3
 Target: bunnyxx (MD5: 86d23dd6cc9e3c345c0baea4b0feb0d7)
 Date: 2026-05-07
+Cracker version: EVP_MD_CTX reuse optimization
 
 Crack time only (excludes table build and candidate load)
 
 --- 1 thread ---
-run 1:  434.0 ms
-run 2:  363.0 ms
-run 3:  388.8 ms
-median: 388.8 ms
+run 1:  350.4 ms
+run 2:  327.7 ms
+run 3:  332.6 ms
+median: 332.6 ms
 
 --- 2 threads ---
-run 1:  323.8 ms
-run 2:  317.5 ms
-run 3:  323.7 ms
-median: 323.7 ms
+run 1:  299.0 ms
+run 2:  283.6 ms
+run 3:  304.6 ms
+median: 299.0 ms
 
 --- 4 threads ---
-run 1:  221.6 ms
-run 2:  228.7 ms
-run 3:  248.4 ms
-median: 228.7 ms
+run 1:  237.8 ms
+run 2:  293.5 ms
+run 3:  224.5 ms
+median: 237.8 ms
 
 speedup (median):
-  1 -> 2 threads: 1.20x
-  1 -> 4 threads: 1.70x
-  2 -> 4 threads: 1.42x
+  1 -> 2 threads: 1.11x
+  1 -> 4 threads: 1.40x
+  2 -> 4 threads: 1.26x
+
+vs pre-optimization run (same conditions):
+  1T: 388.8 -> 332.6 ms  (-14%)
+  2T: 323.7 -> 299.0 ms  (-8%)
+  4T: 228.7 -> 237.8 ms  (within run-to-run variance; workload is memory-bandwidth
+                           bound at 4T so CPU-side saving is less visible)

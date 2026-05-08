@@ -53,6 +53,43 @@ eval "$(direnv hook bash)"
 
 From this point the setup is identical to Linux. Clone the repo inside your WSL2 home directory (not under `/mnt/c/`) and run the first-time setup steps above. All subsequent work should be done from within WSL2.
 
+## Usage
+
+```
+./build/cracker --hash <hex> [options]
+
+options:
+  --hash       <hex>   hex-encoded hash to crack (required)
+  --algo       <name>  hash algorithm: md5, sha1, sha256 (default: md5)
+  --wordlist   <path>  wordlist file, one password per line
+                       (default: data/rockyou_1m.txt)
+  --candidates <path>  frequency-ranked candidate list
+                       (defaults to wordlist if not provided)
+  --threads    <n>     number of worker threads (default: 4)
+  --log-path   <path>  log file path (default: logs/cracker.log)
+```
+
+The `--hash` value must be the correct hex length for the chosen algorithm:
+32 chars for MD5, 40 for SHA-1, 64 for SHA-256. The cracker validates this
+at startup and exits with an error if the lengths do not match.
+
+Example:
+
+```bash
+# crack an MD5 hash
+./build/cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --threads 4
+
+# crack a SHA-256 hash
+./build/cracker \
+  --hash 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8 \
+  --algo sha256 \
+  --threads 4
+```
+
+Note: bcrypt requires a separate verification path and is not supported
+via `--algo`. bcrypt hashes embed a salt and cost factor and cannot be
+cracked with a simple hash comparison loop.
+
 ## Makefile Targets
 
 | Target | Purpose | Flags |

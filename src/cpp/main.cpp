@@ -21,10 +21,11 @@
 
 static void usage(const char* prog) {
     std::fprintf(stderr,
-        "usage: %s --hash <md5_hex> [options]\n"
+        "usage: %s --hash <hex> [options]\n"
         "\n"
         "options:\n"
-        "  --hash       <hex>   32-char MD5 hash to crack (required)\n"
+        "  --hash       <hex>   hex-encoded hash to crack (required)\n"
+        "  --algo       <name>  hash algorithm: md5, sha1, sha256 (default: md5)\n"
         "  --wordlist   <path>  wordlist file, one password per line\n"
         "                       (default: data/rockyou_1m.txt)\n"
         "  --candidates <path>  frequency-ranked candidate list\n"
@@ -34,9 +35,18 @@ static void usage(const char* prog) {
         prog);
 }
 
-static bool hex_to_bytes(const std::string& hex, uint8_t out[16]) {
-    if (hex.size() != 32) return false;
-    for (size_t i = 0; i < 16; ++i) {
+static const EVP_MD* algo_to_md(const std::string& name) {
+    if (name == "md5")    return EVP_md5();
+    if (name == "sha1")   return EVP_sha1();
+    if (name == "sha256") return EVP_sha256();
+    return nullptr;
+}
+
+static bool hex_to_bytes(const std::string& hex, std::vector<uint8_t>& out) {
+    if (hex.size() % 2 != 0) return false;
+    const size_t n = hex.size() / 2;
+    out.resize(n);
+    for (size_t i = 0; i < n; ++i) {
         char buf[3] = {hex[i * 2], hex[i * 2 + 1], '\0'};
         char* end;
         out[i] = static_cast<uint8_t>(std::strtoul(buf, &end, 16));
@@ -58,6 +68,7 @@ static std::vector<std::string> load_lines(const std::string& path) {
 
 int main(int argc, char* argv[]) {
     std::string hash_hex;
+    std::string algo            = "md5";
     std::string wordlist_path   = "data/rockyou_1m.txt";
     std::string candidates_path;
     std::string log_path        = "logs/cracker.log";
@@ -66,6 +77,8 @@ int main(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--hash") == 0 && i + 1 < argc)
             hash_hex = argv[++i];
+        else if (std::strcmp(argv[i], "--algo") == 0 && i + 1 < argc)
+            algo = argv[++i];
         else if (std::strcmp(argv[i], "--wordlist") == 0 && i + 1 < argc)
             wordlist_path = argv[++i];
         else if (std::strcmp(argv[i], "--candidates") == 0 && i + 1 < argc)
@@ -85,9 +98,19 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    uint8_t target_hash[16];
-    if (!hex_to_bytes(hash_hex, target_hash)) {
-        std::fprintf(stderr, "error: --hash must be a 32-character hex string\n");
+    const EVP_MD* md = algo_to_md(algo);
+    if (!md) {
+        std::fprintf(stderr, "error: unsupported algorithm '%s' (supported: md5, sha1, sha256)\n",
+            algo.c_str());
+        return 1;
+    }
+
+    const int expected_bytes = EVP_MD_get_size(md);
+    std::vector<uint8_t> target_hash;
+    if (!hex_to_bytes(hash_hex, target_hash) ||
+            static_cast<int>(target_hash.size()) != expected_bytes) {
+        std::fprintf(stderr, "error: --hash must be %d hex chars for %s\n",
+            expected_bytes * 2, algo.c_str());
         return 1;
     }
 
@@ -110,6 +133,7 @@ int main(int argc, char* argv[]) {
     );
 
     LOG_INFO(logger, "target hash: {}", hash_hex);
+    LOG_INFO(logger, "algorithm:   {}", algo);
     LOG_INFO(logger, "wordlist:    {}", wordlist_path);
     LOG_INFO(logger, "threads:     {}", num_threads);
 
@@ -136,7 +160,7 @@ int main(int argc, char* argv[]) {
 
     // Crack
     auto wall_start = std::chrono::steady_clock::now();
-    std::string result = crack(candidates, table, pool, target_hash, num_threads, logger);
+    std::string result = crack(candidates, table, pool, target_hash.data(), num_threads, md, logger);
     auto wall_end   = std::chrono::steady_clock::now();
 
     double total_ms = std::chrono::duration<double, std::milli>(wall_end - wall_start).count();

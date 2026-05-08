@@ -1,0 +1,31 @@
+thread scaling results -- 1M entry subset, target at position 999,000
+Hardware: Intel i3-1115G4, 2 physical cores / 4 threads, L3 6 MiB
+CPU governor: performance
+taskset: 1T=-c 0, 2T=-c 0,2, 4T=-c 0,1,2,3
+Target: bunnyxx (MD5: 86d23dd6cc9e3c345c0baea4b0feb0d7)
+Date: 2026-05-07
+
+Crack time only (excludes table build and candidate load)
+
+--- 1 thread ---
+run 1:  434.0 ms
+run 2:  363.0 ms
+run 3:  388.8 ms
+median: 388.8 ms
+
+--- 2 threads ---
+run 1:  323.8 ms
+run 2:  317.5 ms
+run 3:  323.7 ms
+median: 323.7 ms
+
+--- 4 threads ---
+run 1:  221.6 ms
+run 2:  228.7 ms
+run 3:  248.4 ms
+median: 228.7 ms
+
+speedup (median):
+  1 -> 2 threads: 1.20x
+  1 -> 4 threads: 1.70x
+  2 -> 4 threads: 1.42x

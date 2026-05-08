@@ -9,17 +9,18 @@ LDFLAGS = -lssl -lcrypto -lpthread
 
 .PHONY: all debug tsan test bench clean
 
-all:
+all: build/cracker
 
-debug:
+debug: build/cracker_debug
 
-tsan:
+tsan: build/cracker_tsan
 
-test: build/test_tiny_ptr build/test_hash_table build/test_hash_table_naive build/test_hash_table_stdmap
+test: build/test_tiny_ptr build/test_hash_table build/test_hash_table_naive build/test_hash_table_stdmap build/test_cracker
 	./build/test_tiny_ptr
 	./build/test_hash_table
 	./build/test_hash_table_naive
 	./build/test_hash_table_stdmap
+	./build/test_cracker
 
 build/test_tiny_ptr: tests/test_tiny_ptr.cpp
 	mkdir -p build
@@ -36,6 +37,24 @@ build/test_hash_table_naive: tests/test_hash_table_naive.cpp src/cpp/hash_table_
 build/test_hash_table_stdmap: tests/test_hash_table_stdmap.cpp src/cpp/hash_table_stdmap.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
+
+build/test_cracker: tests/test_cracker.cpp src/cpp/cracker.cpp src/cpp/hash_table.cpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
+
+CRACKER_SRCS = src/cpp/main.cpp src/cpp/cracker.cpp src/cpp/hash_table.cpp
+
+build/cracker: $(CRACKER_SRCS)
+	mkdir -p build logs
+	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
+
+build/cracker_debug: $(CRACKER_SRCS)
+	mkdir -p build logs
+	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ $(LDFLAGS)
+
+build/cracker_tsan: $(CRACKER_SRCS)
+	mkdir -p build logs
+	$(CXX) $(CXXFLAGS_TSAN) -I. $^ -o $@ $(LDFLAGS)
 
 bench: build/bench_lookup build/perf_tinyptr build/perf_naive build/perf_stdmap
 	./build/bench_lookup --benchmark_format=csv > results/benchmark.csv

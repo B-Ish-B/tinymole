@@ -1,8 +1,8 @@
-# Benchmark Methodology
+# Development Benchmarks
 
-This document records how benchmarks were run, what was measured, and why.
-The final polished results and interpretation go in write_up.md.
-The raw data files live in results/.
+All numbers in this document are from the 1M-entry subset of RockYou, run on the development machine before the full-dataset run. They are preliminary and exist to validate methodology and confirm directional results. Full-dataset numbers will replace the tables in the README once the final run is complete.
+
+This document records how each benchmark was run, what was measured, and why. The final polished results and interpretation go in write_up.md. Raw data files live in results/.
 
 ---
 

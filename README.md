@@ -1,6 +1,12 @@
-# Multithreaded Password Cracker with Tiny Pointer Hash Tables and Frequency-Ranked Candidate Generation
+# tinymole
 
-A high-performance password cracker built in C++17 that combines frequency-ranked candidate generation, a space-efficient hash table using tiny pointers from [Bender et al. (ACM Transactions on Algorithms, 2024)](https://arxiv.org/abs/2111.12800), and lock-free multithreaded search. Final project for CSC 255-0C3: Objects and Algorithms, Oakton College, Spring 2026.
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-blue?logo=cplusplus&logoColor=white)](https://en.cppreference.com/w/cpp/17)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey)](https://github.com/B-Ish-B/tinymole)
+[![Last commit](https://img.shields.io/github/last-commit/B-Ish-B/tinymole)](https://github.com/B-Ish-B/tinymole/commits/main)
+
+**Multithreaded password cracker with tiny pointer hash tables and frequency-ranked candidate generation.**
+
+Built in C++17. Uses a space-efficient hash table derived from [Bender et al. (ACM Transactions on Algorithms, 2024)](https://arxiv.org/abs/2111.12800) to pack more of the working set into cache, combined with lock-free multithreaded search and a frequency-ranked candidate list generated from RockYou. Final project for CSC 255-0C3: Objects and Algorithms, Oakton College, Spring 2026.
 
 ## Results
 
@@ -16,7 +22,7 @@ A high-performance password cracker built in C++17 that combines frequency-ranke
 
 Tiny pointer is fastest at every thread count. The gap widens at 4 threads because smaller slots mean more of the working set fits in cache, reducing DRAM bandwidth pressure.
 
-<!-- Full-dataset results table and performance graphs will replace this section. -->
+Full-dataset results and performance graphs will replace this section after the complete RockYou run. Benchmark methodology and raw data are in [docs/dev-benchmarks.md](docs/dev-benchmarks.md).
 
 ## Quick Start
 
@@ -150,7 +156,11 @@ i -> 1  (76,582x)
 Wrote data/candidates_ranked.txt
 ```
 
-<!-- Substitution chart images will be added here. -->
+### Substitution frequency charts (1M subset)
+
+![All substitutions](results/substitution_analysis_all.png)
+
+![Leet-speak substitutions](results/substitution_analysis_leet.png)
 
 For a faster test run on a subset:
 

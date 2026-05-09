@@ -24,7 +24,7 @@ No external data required. Clone, build, and crack a known hash in under two min
 
 ```bash
 git clone <repo>
-cd csc255-password-cracker
+cd tinymole
 direnv allow
 uv sync
 make all
@@ -66,7 +66,7 @@ First-time setup after cloning:
 
 ```bash
 git clone <repo>
-cd csc255-password-cracker
+cd tinymole
 direnv allow
 uv sync
 make all

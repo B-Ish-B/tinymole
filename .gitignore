@@ -17,3 +17,4 @@ cracker_stdmap
 
 # files generatedd by analysis script 
 data/candidates_ranked.txt
+data/substitution_rules.json

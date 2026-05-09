@@ -1,6 +1,6 @@
 # Multithreaded Password Cracker with Tiny Pointer Hash Tables and Frequency-Ranked Candidate Generation
 
-A high-performance password cracker built in C++17 that combines frequency-ranked candidate generation, a space-efficient hash table using tiny pointers from a 2024 ACM paper, and lock-free multithreaded search.
+A high-performance password cracker built in C++17 that combines frequency-ranked candidate generation, a space-efficient hash table using tiny pointers from [Bender et al. (ACM Transactions on Algorithms, 2024)](https://arxiv.org/abs/2111.12800), and lock-free multithreaded search. Final project for CSC 255-0C3: Objects and Algorithms, Oakton College, Spring 2026.
 
 ## Results
 

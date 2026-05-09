@@ -64,7 +64,7 @@ def load_rockyou(path: Path, limit: int = 0) -> Counter[str]:
             except UnicodeDecodeError:
                 pw = raw.decode('latin-1')  # rockyou has mixed encodings
             freq[pw] += 1
-            if limit and sum(freq.values()) >= limit:
+            if limit and sum(freq.values()) >= limit:  # early exit for subset runs
                 break
     return freq
 
@@ -73,6 +73,7 @@ def build_sub_counters(freq: Counter[str]) -> dict[str, Counter[str]]:
     sub_counters: dict[str, Counter[str]] = defaultdict(Counter)
     for pw, count in freq.items():
         base = normalize(pw)
+        # skip if no substitution happened, or the base word isn't in the corpus
         if base == pw or base not in freq or len(base) != len(pw):
             continue
         for pw_ch, base_ch in zip(pw, base):
@@ -87,6 +88,7 @@ def generate_variants(
     max_subs: int = 2,
     cap: int = 64,
 ) -> list[tuple[int, str]]:
+    # find every character position that has at least one known substitution
     positions = [
         (i, ch, list(sub_counters[ch].most_common()))
         for i, ch in enumerate(word.lower())
@@ -96,10 +98,11 @@ def generate_variants(
         return []
 
     results: list[tuple[int, str]] = []
+    # try applying 1 up to max_subs substitutions simultaneously
     for r in range(1, min(max_subs + 1, len(positions) + 1)):
         for subset in combinations(positions, r):
             sub_opts = [syms for _, _, syms in subset]
-            for combo in product(*sub_opts):
+            for combo in product(*sub_opts):  # all symbol combinations for this subset
                 score = 1
                 chars = list(word)
                 for (idx, _, _), (sym, cnt) in zip(subset, combo):
@@ -114,18 +117,18 @@ def generate_variants(
         if v not in seen and v != word:
             seen.add(v)
             deduped.append((score, v))
-            if len(deduped) >= cap:
+            if len(deduped) >= cap:  # cap prevents combinatorial blowup on long words
                 break
     return deduped
 
 # Extract and count the most common non-alphabetical suffixes appended to passwords in corpus
 def top_suffixes(freq: Counter[str], top_n: int = 50) -> list[tuple[str, int]]:
-    suffix_re = re.compile(r'^[a-zA-Z].*?([^a-zA-Z]+)$')
+    suffix_re = re.compile(r'^[a-zA-Z].*?([^a-zA-Z]+)$')  # match trailing non-alpha chunk
     counts: Counter[str] = Counter()
     for pw, count in freq.items():
         m = suffix_re.match(pw)
         if m:
-            counts[m.group(1)] += count  # only count passwords with a real alpha prefix
+            counts[m.group(1)] += count  # require alpha prefix so pure numbers don't pollute results
     return counts.most_common(top_n)
 
 # Render and save a bar chart of top 20 most frequent substitutions in the rockyou corpus 
@@ -137,12 +140,12 @@ def plot_substitutions(
 ) -> None:
     pairs: list[tuple[str, int]] = []
     for plain, subs in sorted(sub_counters.items()):
-        for sym, count in subs.most_common(3):
+        for sym, count in subs.most_common(3):  # top 3 symbols per base character
             if exclude_case_subs and sym == plain.upper():  # skip a->A, s->S, etc.
                 continue
             pairs.append((f"{plain}→{sym}", count))
     pairs.sort(key=lambda x: x[1], reverse=True)
-    pairs = pairs[:20]
+    pairs = pairs[:20]  # keep the 20 most frequent for readability
     if not pairs:
         return
 
@@ -156,11 +159,13 @@ def plot_substitutions(
     fig.tight_layout()
     fig.savefig(out_path, dpi=120)
     plt.close(fig)
-    print(f"  Chart saved to {out_path}")
+    print(f"Chart saved to {out_path}")
 
 
 # entry point: load corpus --> analyze substitutions --> generate ranked candidates --> save charts and write outputs for cracker to use 
 def main() -> None:
+
+    # look for CLI args 
     parser = argparse.ArgumentParser(
         description="Frequency analysis engine: produces ranked candidates and substitution rules."
     )
@@ -178,6 +183,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # load rockyou 
     if not ROCKYOU.exists():
         print(
             f"error: {ROCKYOU} not found.\n"
@@ -188,15 +194,16 @@ def main() -> None:
 
     RESULTS_DIR.mkdir(exist_ok=True)
 
-    print("Loading rockyou.txt ...", flush=True)
+    print("Loading rockyou.txt", flush=True)
     freq = load_rockyou(ROCKYOU, limit=args.limit)
     total_entries = sum(freq.values())
     unique_pw = len(freq)
-    print(f"  {unique_pw:,} unique passwords ({total_entries:,} total entries)")
+    print(f"{unique_pw:,} unique passwords ({total_entries:,} total entries)")
 
-    print("Analyzing substitution patterns ...", flush=True)
+    print("Analyzing substitution patterns", flush=True)
     sub_counters = build_sub_counters(freq)
 
+    # create sub rules: mapping between sub pattern and freq 
     sub_rules_json: dict[str, dict[str, int]] = {
         plain: dict(cnt.most_common())
         for plain, cnt in sorted(sub_counters.items())
@@ -204,10 +211,11 @@ def main() -> None:
     }
     with open(SUBS_JSON, 'w', encoding='utf-8') as f:
         json.dump(sub_rules_json, f, indent=2)
-    print(f"  {len(sub_rules_json)} base chars with substitutions -> {SUBS_JSON}")
+    print(f"{len(sub_rules_json)} base chars with substitutions -> {SUBS_JSON}")
 
+    # count top subs 
     if sub_counters:
-        print("  Top substitutions:")
+        print("Top substitutions:")
         flat = [
             (plain, sym, cnt)
             for plain, subs in sub_counters.items()
@@ -215,21 +223,22 @@ def main() -> None:
         ]
         flat.sort(key=lambda x: x[2], reverse=True)
         for plain, sym, cnt in flat[:8]:
-            print(f"    {plain} -> {sym}  ({cnt:,}x)")
+            print(f"{plain} -> {sym}  ({cnt:,}x)")
 
-    print("Analyzing suffixes ...", flush=True)
+    # suffix analysis 
+    print("Analyzing suffixes", flush=True)
     suffixes = top_suffixes(freq, top_n=50)
     if suffixes:
-        print("  Top 10 suffixes:")
+        print("Top 10 suffixes:")
         for suf, cnt in suffixes[:10]:
-            print(f"    {repr(suf):12s}  {cnt:,}")
+            print(f"{repr(suf):12s}  {cnt:,}")
 
-    print("Building ranked candidate list ...", flush=True)
+    print("Building ranked candidate list", flush=True)
 
     ranked: list[str] = [pw for pw, _ in freq.most_common()]  # raw frequency order first
     seen: set[str] = set(ranked)
 
-    # aggregate by base word so "password" outscores its rarer leet variants when picking what to expand
+    # sum occurrences across all leet variants of the same word so "password" ranks above "p@ssword"
     base_freq: Counter[str] = Counter()
     for pw, count in freq.items():
         base_freq[normalize(pw)] += count
@@ -237,7 +246,7 @@ def main() -> None:
     variants_added = 0
     for base_word, _ in base_freq.most_common(args.top):
         for _, variant in generate_variants(base_word, sub_counters):
-            if variant not in seen:
+            if variant not in seen:  # don't re-add passwords already in the raw list
                 ranked.append(variant)
                 seen.add(variant)
                 variants_added += 1
@@ -245,21 +254,22 @@ def main() -> None:
     total_candidates = len(ranked)
     write_limit = args.output_limit or total_candidates
     print(
-        f"  {total_candidates:,} total candidates "
+        f"{total_candidates:,} total candidates "
         f"({unique_pw:,} raw + {variants_added:,} generated variants)"
     )
     if args.output_limit:
-        print(f"  Writing first {write_limit:,} (--output-limit)")
+        print(f"Writing first {write_limit:,} (--output-limit)")
 
     with open(CANDIDATES, 'w', encoding='utf-8') as f:
         for i, pw in enumerate(ranked):
             if i >= write_limit:
                 break
             f.write(pw + '\n')
-    print(f"  Wrote {CANDIDATES}")
+    print(f"Wrote {CANDIDATES}")
 
+    # Create viz 
     if sub_counters:
-        print("Generating substitution charts ...", flush=True)
+        print("Generating substitution charts", flush=True)
         plot_substitutions(
             sub_counters,
             RESULTS_DIR / "substitution_analysis_all.png",

@@ -221,4 +221,6 @@ cracked with a simple hash comparison loop.
 | `make tsan` | Thread sanitizer build, run before any multithreaded benchmark | `CXXFLAGS_TSAN` |
 | `make test` | Build and run all Google Test unit tests | `CXXFLAGS_DEBUG` |
 | `make bench` | Build and run Google Benchmark microbenchmarks | `CXXFLAGS_RELEASE` |
+| `make crack HASH=<hex>` | Build cracker, run frequency analysis if needed, then crack | `HASH`, `ALGO`, `THREADS`, `WORDLIST` |
+| `make lookup HASH=<hex>` | Query weakpass API for a hash before local cracking | `HASH`, `ALGO` |
 | `make clean` | Remove all build artifacts | n/a |

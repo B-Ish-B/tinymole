@@ -7,7 +7,12 @@ CXXFLAGS_TSAN = -std=c++17 -O1 -g -fsanitize=thread
 
 LDFLAGS = -lssl -lcrypto -lpthread
 
-.PHONY: all debug tsan test bench clean
+HASH     ?=
+ALGO     ?= md5
+THREADS  ?= 4
+WORDLIST ?= data/rockyou.txt
+
+.PHONY: all debug tsan test bench crack lookup clean
 
 all: build/cracker
 
@@ -82,6 +87,17 @@ build/perf_naive: src/cpp/perf_naive.cpp src/cpp/hash_table_naive.cpp
 build/perf_stdmap: src/cpp/perf_stdmap.cpp src/cpp/hash_table_stdmap.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
+
+crack: build/cracker data/candidates_ranked.txt
+	@if [ -z "$(HASH)" ]; then echo "error: HASH is required. Usage: make crack HASH=<hex>"; exit 1; fi
+	./build/cracker --hash $(HASH) --algo $(ALGO) --wordlist $(WORDLIST) --candidates data/candidates_ranked.txt --threads $(THREADS)
+
+lookup:
+	@if [ -z "$(HASH)" ]; then echo "error: HASH is required. Usage: make lookup HASH=<hex>"; exit 1; fi
+	uv run src/python/weakpass_lookup.py --hash $(HASH) --algo $(ALGO)
+
+data/candidates_ranked.txt: data/rockyou.txt
+	uv run src/python/frequency_analysis.py
 
 clean:
 	rm -rf build

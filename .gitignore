@@ -14,3 +14,6 @@ cracker
 cracker_tinyptr
 cracker_stdmap
 .direnv
+
+# files generatedd by analysis script 
+data/candidates_ranked.txt

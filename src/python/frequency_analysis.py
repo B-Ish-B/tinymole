@@ -54,6 +54,7 @@ def normalize(pw: str) -> str:
 # load the rockyou dataset (uses utf-8 encoding)
 def load_rockyou(path: Path, limit: int = 0) -> Counter[str]:
     freq: Counter[str] = Counter()
+    total_read = 0
     with open(path, 'rb') as fh:
         for raw in fh:
             raw = raw.rstrip(b'\r\n')
@@ -64,7 +65,8 @@ def load_rockyou(path: Path, limit: int = 0) -> Counter[str]:
             except UnicodeDecodeError:
                 pw = raw.decode('latin-1')  # rockyou has mixed encodings
             freq[pw] += 1
-            if limit and sum(freq.values()) >= limit:  # early exit for subset runs
+            total_read += 1
+            if limit and total_read >= limit:
                 break
     return freq
 
@@ -181,9 +183,14 @@ def main() -> None:
         '--output-limit', type=int, default=0,
         help='Max candidates to write to candidates_ranked.txt (0 = no limit)',
     )
+    parser.add_argument(
+        '--suffixes', type=int, default=10,
+        help='Top N suffixes to append to base words in candidate generation (default: 10)',
+    )
     args = parser.parse_args()
+    print(f"Configuration: --limit {args.limit} --top {args.top} --output-limit {args.output_limit}", flush=True)
 
-    # load rockyou 
+    # load rockyou
     if not ROCKYOU.exists():
         print(
             f"error: {ROCKYOU} not found.\n"
@@ -243,19 +250,29 @@ def main() -> None:
     for pw, count in freq.items():
         base_freq[normalize(pw)] += count
 
-    variants_added = 0
+    leet_added = 0
     for base_word, _ in base_freq.most_common(args.top):
         for _, variant in generate_variants(base_word, sub_counters):
             if variant not in seen:  # don't re-add passwords already in the raw list
                 ranked.append(variant)
                 seen.add(variant)
-                variants_added += 1
+                leet_added += 1
+
+    suffix_list = [suf for suf, _ in suffixes[:args.suffixes]]
+    suffixes_added = 0
+    for base_word, _ in base_freq.most_common(args.top):
+        for suf in suffix_list:
+            variant = base_word + suf
+            if variant not in seen:
+                ranked.append(variant)
+                seen.add(variant)
+                suffixes_added += 1
 
     total_candidates = len(ranked)
     write_limit = args.output_limit or total_candidates
     print(
         f"{total_candidates:,} total candidates "
-        f"({unique_pw:,} raw + {variants_added:,} generated variants)"
+        f"({unique_pw:,} raw + {leet_added:,} leet variants + {suffixes_added:,} suffix variants)"
     )
     if args.output_limit:
         print(f"Writing first {write_limit:,} (--output-limit)")

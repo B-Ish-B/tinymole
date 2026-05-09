@@ -22,6 +22,8 @@
             python311
             uv
             hyperfine
+            lazygit
+            delta
             gbenchmark
             gtest
             quill-log

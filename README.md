@@ -1,12 +1,26 @@
 # Multithreaded Password Cracker with Tiny Pointer Hash Tables and Frequency-Ranked Candidate Generation
 
-This project builds a high-performance password cracker that demonstrates three interconnected computer science concepts: statistical frequency analysis for candidate ranking, a space-efficient hash table using tiny pointers from a 2024 peer-reviewed paper, and concurrent multithreaded execution with zero lock contention. The system is benchmarked at each layer to produce measurable, graphable results for the project write-up. The project directly satisfies two required course topics: cryptography, covered through the treatment of password hashing algorithms (MD5, SHA-1, SHA-256, bcrypt) and hash-to-plaintext lookup tables; and parallel concurrency, covered through the multithreaded candidate evaluation loop, keyspace partitioning across threads, and the thread-safe shared read-only data structure design.
+A high-performance password cracker built in C++17 that combines frequency-ranked candidate generation, a space-efficient hash table using tiny pointers from a 2024 ACM paper, and lock-free multithreaded search.
 
 ## Results
 
-<!-- Final benchmark results, performance graphs, and cache miss comparison charts will be added here once full-dataset benchmarks are complete. -->
+> Preliminary results on a 1M entry subset (Intel i3-1115G4, 2 physical cores / 4 threads, 6 MB L3). Full-dataset benchmarks will replace these once the complete RockYou run is complete.
+
+### Hash table comparison (crack time, 1 thread vs 4 threads)
+
+| Implementation | Slot size | 1 thread | 4 threads | Speedup |
+|---|---|---|---|---|
+| Tiny pointer (this project) | 24 bytes | 333 ms | 236 ms | 1.41x |
+| Naive open-addressed | 32 bytes | 355 ms | 260 ms | 1.37x |
+| std::unordered_map | ~100 bytes | 355 ms | 268 ms | 1.32x |
+
+Tiny pointer is fastest at every thread count. The gap widens at 4 threads because smaller slots mean more of the working set fits in cache, reducing DRAM bandwidth pressure.
+
+<!-- Full-dataset results table and performance graphs will replace this section. -->
 
 ## Quick Start
+
+No external data required. Clone, build, and crack a known hash in under two minutes:
 
 ```bash
 git clone <repo>
@@ -15,13 +29,26 @@ direnv allow
 uv sync
 make all
 make test
+./build/cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --wordlist data/test_wordlist.txt
 ```
 
-To run a crack once the pipeline is set up (see Pipeline section below):
+Expected output:
 
-```bash
-./build/cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --wordlist data/rockyou.txt --candidates data/candidates_ranked.txt --threads 4
 ```
+cracked: password
+```
+
+`make test` expected output:
+
+```
+[  PASSED  ] 10 tests.   # tiny_ptr and hash_table
+[  PASSED  ] 13 tests.   # hash_table large insert/lookup
+[  PASSED  ] 9 tests.    # hash_table_naive
+[  PASSED  ] 8 tests.    # hash_table_stdmap
+[  PASSED  ] 11 tests.   # cracker integration and partition
+```
+
+Full logs are written to `logs/cracker.log` on every run.
 
 ## Setup
 
@@ -76,7 +103,7 @@ From this point the setup is identical to Linux. Clone the repo inside your WSL2
 
 ## Pipeline
 
-The project runs in three sequential steps. The frequency analysis runs once to produce a ranked candidate list, the cracker binary loads the wordlist into a hash table at startup, then iterates through candidates in ranked order until a match is found.
+The project runs in three sequential steps. The frequency analysis runs once to produce a ranked candidate list. The cracker binary loads the wordlist into a hash table at startup, then iterates through candidates in ranked order until a match is found.
 
 <!-- Architecture diagram showing the three-component pipeline will be added here. -->
 
@@ -108,7 +135,22 @@ This reads `data/rockyou.txt` and produces:
 | All-substitutions chart | `results/substitution_analysis_all.png` |
 | Leet-speak chart (case changes excluded) | `results/substitution_analysis_leet.png` |
 
-<!-- Sample output and substitution chart images will be added here. -->
+Expected terminal output:
+
+```
+Loading rockyou.txt
+14,344,391 unique passwords (14,344,391 total entries)
+Analyzing substitution patterns
+26 base chars with substitutions -> data/substitution_rules.json
+Top substitutions:
+a -> A  (159,829x)
+e -> E  (124,043x)
+i -> 1  (76,582x)
+...
+Wrote data/candidates_ranked.txt
+```
+
+<!-- Substitution chart images will be added here. -->
 
 For a faster test run on a subset:
 
@@ -125,7 +167,13 @@ make all
 
 `--wordlist` builds the hash lookup table. `--candidates` sets the iteration order. Passing both means the full RockYou table is searched but the most statistically likely passwords are tried first. See the Usage section below for all available flags.
 
-<!-- Expected terminal output will be added here. -->
+Expected terminal output:
+
+```
+cracked: password
+```
+
+Full structured logs including table build stats, thread count, and crack timing are written to `logs/cracker.log`.
 
 ## Usage
 

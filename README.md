@@ -1,7 +1,8 @@
 # tinymole
 
-[![C++17](https://img.shields.io/badge/C%2B%2B-17-blue?logo=cplusplus&logoColor=white)](https://en.cppreference.com/w/cpp/17)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![OpenSSL](https://img.shields.io/badge/crypto-OpenSSL%203.x-red?logo=openssl&logoColor=white)](https://www.openssl.org/)
+[![Nix](https://img.shields.io/badge/built%20with-Nix-5277C3?logo=nixos&logoColor=white)](flake.nix)
 [![Last commit](https://img.shields.io/github/last-commit/B-Ish-B/tinymole)](https://github.com/B-Ish-B/tinymole/commits/main)
 
 **Multithreaded password cracker with tiny pointer hash tables and frequency-ranked candidate generation.**

@@ -53,6 +53,56 @@ eval "$(direnv hook bash)"
 
 From this point the setup is identical to Linux. Clone the repo inside your WSL2 home directory (not under `/mnt/c/`) and run the first-time setup steps above. All subsequent work should be done from within WSL2.
 
+## Pipeline
+
+The project runs in three sequential steps.
+
+### Step 1 — Obtain rockyou.txt
+
+The wordlist is not included in the repo. Place it at `data/rockyou.txt` before continuing:
+
+```bash
+# Kali / Parrot — already on disk
+cp /usr/share/wordlists/rockyou.txt data/rockyou.txt
+# or if gzipped
+gunzip -c /usr/share/wordlists/rockyou.txt.gz > data/rockyou.txt
+```
+
+### Step 2 — Run frequency analysis
+
+```bash
+uv run src/python/frequency_analysis.py
+```
+
+This reads `data/rockyou.txt` and produces:
+
+| Output | Path |
+|---|---|
+| Frequency-ranked candidate list | `data/candidates_ranked.txt` |
+| Substitution pattern frequencies | `data/substitution_rules.json` |
+| Chart — all substitutions | `results/substitution_analysis_all.png` |
+| Chart — leet-speak only (no case changes) | `results/substitution_analysis_leet.png` |
+
+Optional flags for a faster test run on a subset:
+
+```bash
+uv run src/python/frequency_analysis.py --limit 1000000 --top 10000
+```
+
+### Step 3 — Build and run the cracker
+
+```bash
+make all   # compiles build/cracker
+
+./build/cracker \
+  --hash 5f4dcc3b5aa765d61d8327deb882cf99 \
+  --wordlist data/rockyou.txt \
+  --candidates data/candidates_ranked.txt \
+  --threads 4
+```
+
+`--wordlist` builds the hash lookup table; `--candidates` sets the iteration order. Passing both means the full RockYou table is available but the most statistically likely passwords are tried first.
+
 ## Usage
 
 ```

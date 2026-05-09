@@ -13,3 +13,4 @@ build/
 cracker
 cracker_tinyptr
 cracker_stdmap
+.direnv

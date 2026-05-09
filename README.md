@@ -2,6 +2,27 @@
 
 This project builds a high-performance password cracker that demonstrates three interconnected computer science concepts: statistical frequency analysis for candidate ranking, a space-efficient hash table using tiny pointers from a 2024 peer-reviewed paper, and concurrent multithreaded execution with zero lock contention. The system is benchmarked at each layer to produce measurable, graphable results for the project write-up. The project directly satisfies two required course topics: cryptography, covered through the treatment of password hashing algorithms (MD5, SHA-1, SHA-256, bcrypt) and hash-to-plaintext lookup tables; and parallel concurrency, covered through the multithreaded candidate evaluation loop, keyspace partitioning across threads, and the thread-safe shared read-only data structure design.
 
+## Results
+
+<!-- Final benchmark results, performance graphs, and cache miss comparison charts will be added here once full-dataset benchmarks are complete. -->
+
+## Quick Start
+
+```bash
+git clone <repo>
+cd csc255-password-cracker
+direnv allow
+uv sync
+make all
+make test
+```
+
+To run a crack once the pipeline is set up (see Pipeline section below):
+
+```bash
+./build/cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --wordlist data/rockyou.txt --candidates data/candidates_ranked.txt --threads 4
+```
+
 ## Setup
 
 ### Linux and macOS
@@ -52,6 +73,59 @@ eval "$(direnv hook bash)"
 ```
 
 From this point the setup is identical to Linux. Clone the repo inside your WSL2 home directory (not under `/mnt/c/`) and run the first-time setup steps above. All subsequent work should be done from within WSL2.
+
+## Pipeline
+
+The project runs in three sequential steps. The frequency analysis runs once to produce a ranked candidate list, the cracker binary loads the wordlist into a hash table at startup, then iterates through candidates in ranked order until a match is found.
+
+<!-- Architecture diagram showing the three-component pipeline will be added here. -->
+
+### Step 1: Obtain rockyou.txt
+
+The wordlist is not included in the repo. Place it at `data/rockyou.txt` before continuing:
+
+```bash
+# Kali or Parrot (already on disk)
+cp /usr/share/wordlists/rockyou.txt data/rockyou.txt
+# or if gzipped
+gunzip -c /usr/share/wordlists/rockyou.txt.gz > data/rockyou.txt
+```
+
+For all other systems, download the RockYou dataset from a reputable security research source and place it at `data/rockyou.txt`.
+
+### Step 2: Run frequency analysis
+
+```bash
+uv run src/python/frequency_analysis.py
+```
+
+This reads `data/rockyou.txt` and produces:
+
+| Output | Path |
+|---|---|
+| Frequency-ranked candidate list | `data/candidates_ranked.txt` |
+| Substitution pattern frequencies | `data/substitution_rules.json` |
+| All-substitutions chart | `results/substitution_analysis_all.png` |
+| Leet-speak chart (case changes excluded) | `results/substitution_analysis_leet.png` |
+
+<!-- Sample output and substitution chart images will be added here. -->
+
+For a faster test run on a subset:
+
+```bash
+uv run src/python/frequency_analysis.py --limit 1000000 --top 10000
+```
+
+### Step 3: Build and run the cracker
+
+```bash
+make all
+./build/cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --wordlist data/rockyou.txt --candidates data/candidates_ranked.txt --threads 4
+```
+
+`--wordlist` builds the hash lookup table. `--candidates` sets the iteration order. Passing both means the full RockYou table is searched but the most statistically likely passwords are tried first. See the Usage section below for all available flags.
+
+<!-- Expected terminal output will be added here. -->
 
 ## Usage
 

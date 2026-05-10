@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: Google Test unit tests for the naive open-addressed hash table.
  * Same test coverage as test_hash_table.cpp to verify behavioral parity between
  * the naive 32-byte-slot implementation and the tiny pointer implementation.

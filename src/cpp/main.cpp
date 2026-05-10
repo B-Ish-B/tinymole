@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: CLI entry point for the tinymole cracker. Parses --hash, --algo,
  * --wordlist, --candidates, --threads, and --log-path flags. Builds the hash
  * table from the wordlist, loads the candidate list, then runs the multithreaded

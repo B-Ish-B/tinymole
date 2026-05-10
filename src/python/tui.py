@@ -2,7 +2,7 @@
 
 '''
 @author Ismail Alwahsh
-@since May 10, 2026
+@since May 9, 2026
 @description: Terminal UI for tinymole. Renders the tinymole ASCII banner
 directly to the raw terminal on startup, then launches a Textual two-panel
 interface. Left panel is a configuration form (hash, algorithm, thread count,

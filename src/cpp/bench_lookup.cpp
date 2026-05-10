@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: Google Benchmark microbenchmarks comparing lookup throughput
  * across all three hash table implementations (tiny pointer, naive, stdmap).
  * Runs against a real wordlist with miss-query workloads to reflect typical

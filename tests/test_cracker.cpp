@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: Google Test integration tests for the cracker. Tests
  * partition_candidates distribution, single and multi-thread crack correctness,
  * not-found behavior, and algorithm selection (MD5, SHA-1, SHA-256).

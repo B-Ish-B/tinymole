@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: End-to-end cracker benchmark. Runs a full crack attempt across
  * all three hash table implementations and reports wall-clock time per run.
  * Used to produce the thread-count vs crack-time numbers in the README.

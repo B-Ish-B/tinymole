@@ -2,7 +2,7 @@
 
 '''
 @author Ismail Alwahsh
-@since May 10, 2026
+@since May 9, 2026
 @description: Weakpass API lookup utility. Queries the Weakpass REST API for a
 given hash and prints the plaintext password if found. No local wordlist needed.
 Results are cached in data/weakpass_cache.json so the same hash is never looked

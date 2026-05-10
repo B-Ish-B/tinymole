@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: std::unordered_map hash table wrapper. Stores hex-encoded hash
  * keys mapped to plaintext passwords. No contiguous pool, no tiny pointers.
  * Exposes the same load/lookup interface as the other two implementations so

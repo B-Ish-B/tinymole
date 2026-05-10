@@ -74,7 +74,7 @@ def _try_md5decrypt(client: httpx.Client, hash_hex: str, algo: str) -> str | Non
         )
         if r.status_code == 200:
             text = r.text.strip()
-            if text and text != "ERROR":
+            if text and not text.upper().startswith(("ERROR", "CODE ERREUR", "INVALID")):
                 return text
     except httpx.RequestError:
         pass

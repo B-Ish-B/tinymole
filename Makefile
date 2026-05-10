@@ -12,7 +12,7 @@ ALGO     ?= md5
 THREADS  ?= 4
 WORDLIST ?= data/rockyou.txt
 
-.PHONY: all debug tsan test bench crack lookup clean
+.PHONY: all debug tsan test bench crack lookup tui clean
 
 all: build/cracker
 
@@ -91,6 +91,9 @@ build/perf_stdmap: src/cpp/perf_stdmap.cpp src/cpp/hash_table_stdmap.cpp
 crack: build/cracker data/candidates_ranked.txt
 	@if [ -z "$(HASH)" ]; then echo "error: HASH is required. Usage: make crack HASH=<hex>"; exit 1; fi
 	./build/cracker --hash $(HASH) --algo $(ALGO) --wordlist $(WORDLIST) --candidates data/candidates_ranked.txt --threads $(THREADS)
+
+tui: build/cracker
+	uv run src/python/tui.py
 
 lookup:
 	@if [ -z "$(HASH)" ]; then echo "error: HASH is required. Usage: make lookup HASH=<hex>"; exit 1; fi

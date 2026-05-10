@@ -1,3 +1,12 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 7, 2026
+ * @description: Naive open-addressed hash table. Uses full 8-byte pool offsets
+ * instead of tiny pointers, so each slot is 32 bytes (vs 24 for HashTable).
+ * Same linear probing logic and load factor. Exists only as a benchmark
+ * baseline to isolate the cache impact of the larger slot size.
+ */
+
 #pragma once
 
 #include <cstdint>

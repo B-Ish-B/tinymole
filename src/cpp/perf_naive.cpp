@@ -1,3 +1,11 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 7, 2026
+ * @description: Standalone perf runner for the naive open-addressed hash table.
+ * Same workload as perf_tinyptr for direct comparison. Use with perf stat to
+ * collect cache miss counts and compare against the tiny pointer variant.
+ */
+
 #include <openssl/evp.h>
 #include <fstream>
 #include <string>

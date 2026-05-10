@@ -1,3 +1,13 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 7, 2026
+ * @description: Tiny pointer hash table. Each slot is 24 bytes: 16-byte MD5
+ * key, 4-byte tiny_ptr (27-bit pool offset + 5-bit length), 1-byte occupied
+ * flag, 3-byte padding. Open addressing with linear probing. Table capacity is
+ * sized to 70% load factor. This is the primary implementation benchmarked
+ * against the naive and stdmap baselines.
+ */
+
 #pragma once
 
 #include <cstdint>

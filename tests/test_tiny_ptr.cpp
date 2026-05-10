@@ -1,3 +1,11 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 7, 2026
+ * @description: Google Test unit tests for the tiny pointer encode/decode
+ * functions and PasswordPool. Covers boundary values, round-trip correctness,
+ * and rejection of passwords that exceed the 31-byte or 128 MB limits.
+ */
+
 #include <gtest/gtest.h>
 #include "src/cpp/tiny_ptr.hpp"
 

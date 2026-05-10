@@ -1,3 +1,11 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 7, 2026
+ * @description: Tiny pointer hash table implementation. Handles table sizing,
+ * linear probe insert and lookup, and wordlist loading. Reports skip counts
+ * (too long, empty, null byte, duplicate) through BuildStats for logging.
+ */
+
 #include "src/cpp/hash_table.hpp"
 
 #include <chrono>

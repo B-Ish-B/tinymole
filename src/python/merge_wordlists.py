@@ -1,22 +1,89 @@
 #!/usr/bin/env python3
 
-# @author Ish
-# @since May 2026
-# @description Weakpass API lookup. Queries the weakpass.com dataset search API
-# for a given hash before falling back to local cracking. Exits 0 and prints
-# the plaintext if found; exits 1 if not found so callers can fall back.
+'''
+@author Ismail Alwahsh
+@since May 9, 2026
+@description: Online hash lookup utility. Queries the Weakpass REST API and
+returns the plaintext password if found. Free, no API key required. Results
+are cached in data/weakpass_cache.json so the same hash is never queried
+twice. Exits 0 with "cracked: <password> (via weakpass)" on a hit, exits 1
+on a miss. Supports MD5, SHA-1, and SHA-256.
+'''
 
-# TODO (Ish): implement argparse for --hash and --algo flags (same interface as cracker)
+import argparse
+import json
+import sys
+from pathlib import Path
 
-# TODO (Ish): query the weakpass search API
-# endpoint: GET https://weakpass.com/api/v1/search/<hash>
-# response: JSON with a 'password' field if found, 404 if not
+import httpx
 
-# TODO (Ish): print plaintext to stdout on hit (same format as cracker: "cracked: <password>")
+CACHE_PATH = Path("data/weakpass_cache.json")
 
-# TODO (Ish): support multiple wordlist datasets from weakpass if the API exposes them
-# weakpass hosts several datasets beyond rockyou (e.g. weakpass-3, hashesorg)
-# the API may allow specifying which dataset to search -- explore and add a --dataset flag
 
-# TODO (Ish): add a simple cache file (data/weakpass_cache.json) so repeated lookups
-# for the same hash do not burn API requests during benchmarking runs
+def _load_cache() -> dict[str, str]:
+    if CACHE_PATH.exists():
+        try:
+            return json.loads(CACHE_PATH.read_text())
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
+def _save_cache(cache: dict[str, str]) -> None:
+    CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CACHE_PATH.write_text(json.dumps(cache, indent=2))
+
+
+def _try_weakpass(client: httpx.Client, hash_hex: str) -> str | None:
+    try:
+        r = client.get(f"https://weakpass.com/api/v1/search/{hash_hex}", timeout=10)
+        if r.status_code == 200:
+            return r.json().get("pass")  # API returns "pass", not "password"
+    except httpx.RequestError:
+        pass
+    return None
+
+
+def lookup(hash_hex: str, algo: str = "md5") -> tuple[str | None, str | None]:
+    '''Returns (password, service_name) or (None, None) if not found.'''
+    cache = _load_cache()
+    if hash_hex in cache:
+        entry = cache[hash_hex]
+        if isinstance(entry, dict):
+            return entry.get("password"), entry.get("service")
+        return entry, "cache"
+
+    services = [
+        ("weakpass", lambda c: _try_weakpass(c, hash_hex)),
+    ]
+
+    with httpx.Client() as client:
+        for name, fn in services:
+            password = fn(client)
+            if password:
+                cache[hash_hex] = {"password": password, "service": name}
+                _save_cache(cache)
+                return password, name
+
+    return None, None
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Query online hash lookup APIs. No local dataset required."
+    )
+    parser.add_argument("--hash",  required=True, help="hex-encoded hash to look up")
+    parser.add_argument("--algo",  default="md5", help="hash algorithm (md5, sha1, sha256)")
+    args = parser.parse_args()
+
+    password, service = lookup(args.hash, args.algo)
+    if password:
+        print(f"cracked: {password} (via {service})")
+        sys.exit(0)
+    else:
+        print("not found")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

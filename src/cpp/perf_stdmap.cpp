@@ -1,3 +1,11 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 7, 2026
+ * @description: Standalone perf runner for the std::unordered_map hash table.
+ * Same workload as perf_tinyptr and perf_naive. Provides the third data point
+ * for the cache miss comparison across all three implementations.
+ */
+
 #include <openssl/evp.h>
 #include <fstream>
 #include <string>

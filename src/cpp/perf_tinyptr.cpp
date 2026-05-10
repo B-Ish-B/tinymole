@@ -1,3 +1,11 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 7, 2026
+ * @description: Standalone perf runner for the tiny pointer hash table. Loads
+ * a wordlist, runs 2M miss queries, and prints total lookup time to stdout.
+ * Used with perf stat or perf record to get hardware counter data.
+ */
+
 #include <openssl/evp.h>
 #include <fstream>
 #include <string>

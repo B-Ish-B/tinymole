@@ -8,7 +8,7 @@ rockyou.txt, merges a Weakpass wordlist (appended after the frequency-ranked
 candidates), and writes all outputs used by the cracker:
 
   data/candidates_ranked.txt   -- combined ranked list (rockyou first, weakpass after)
-  data/substitution_rules.json -- substitution pattern frequencies from rockyou
+  data/substitution_rules.json -- substitution pattern frequencies from combined corpus
   results/substitution_analysis_all.png
   results/substitution_analysis_leet.png
 
@@ -68,16 +68,25 @@ def main() -> None:
 
     RESULTS_DIR.mkdir(exist_ok=True)
 
-    # --- rockyou frequency analysis ---
     print(f"Configuration: --limit {args.limit} --top {args.top} --output-limit {args.output_limit}", flush=True)
+
+    # --- load both corpora ---
     print("Loading rockyou.txt", flush=True)
     freq = load_rockyou(ROCKYOU, limit=args.limit)
     unique_pw = len(freq)
-    total_entries = sum(freq.values())
-    print(f"{unique_pw:,} unique passwords ({total_entries:,} total entries)")
+    print(f"{unique_pw:,} unique passwords ({sum(freq.values()):,} total entries)")
 
+    weakpass_freq: Counter[str] = Counter()
+    if weakpass_available:
+        print(f"Loading weakpass wordlist from {args.weakpass}", flush=True)
+        weakpass_freq = Counter(_load_wordlist(args.weakpass))
+        print(f"{len(weakpass_freq):,} unique weakpass entries")
+
+    combined_freq = freq + weakpass_freq
+
+    # --- substitution analysis on combined corpus ---
     print("Analyzing substitution patterns", flush=True)
-    sub_counters = build_sub_counters(freq)
+    sub_counters = build_sub_counters(combined_freq)
 
     sub_rules_json: dict[str, dict[str, int]] = {
         plain: dict(cnt.most_common())
@@ -89,8 +98,9 @@ def main() -> None:
     print(f"{len(sub_rules_json)} base chars with substitutions -> {SUBS_JSON}")
 
     print("Analyzing suffixes", flush=True)
-    suffixes = top_suffixes(freq, top_n=50)
+    suffixes = top_suffixes(combined_freq, top_n=50)
 
+    # --- build ranked candidate list (rockyou order preserved) ---
     print("Building ranked candidate list from rockyou", flush=True)
     ranked: list[str] = [pw for pw, _ in freq.most_common()]
     seen: set[str] = set(ranked)
@@ -122,14 +132,12 @@ def main() -> None:
         f"({unique_pw:,} raw + {leet_added:,} leet + {suffixes_added:,} suffix)"
     )
 
-    # --- merge weakpass (appended after rockyou candidates) ---
+    # --- append weakpass entries not already in the list ---
     if weakpass_available:
-        print(f"Loading weakpass wordlist from {args.weakpass}", flush=True)
-        weakpass_entries = _load_wordlist(args.weakpass)
-        new_from_weakpass = [pw for pw in weakpass_entries if pw not in seen]
+        new_from_weakpass = [pw for pw in weakpass_freq if pw not in seen]
         ranked.extend(new_from_weakpass)
         print(
-            f"{len(weakpass_entries):,} weakpass entries, "
+            f"{len(weakpass_freq):,} weakpass entries, "
             f"{len(new_from_weakpass):,} new appended after rockyou candidates"
         )
 
@@ -148,7 +156,7 @@ def main() -> None:
         plot_substitutions(
             sub_counters,
             RESULTS_DIR / "substitution_analysis_all.png",
-            title='All substitutions observed in RockYou (including case changes)',
+            title='All substitutions observed in combined corpus (including case changes)',
         )
         plot_substitutions(
             sub_counters,

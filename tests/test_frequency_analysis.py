@@ -1,6 +1,6 @@
 from collections import Counter
 
-from frequency_analysis import build_sub_counters, generate_variants, normalize
+from src.python.frequency_analysis import build_sub_counters, generate_variants, normalize
 
 
 class TestNormalize:

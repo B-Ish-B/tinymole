@@ -1,5 +1,7 @@
+# input data 
 data/rockyou.txt
 data/rockyou_1m.txt
+data/ignis_10m.txt
 
 logs/cracker.log
 

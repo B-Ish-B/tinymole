@@ -2,7 +2,7 @@
 
 '''
 @author Patrick Rooney
-@since May 2026
+@since May 9, 2026
 @description: Combined candidate pipeline. Runs full frequency analysis on
 rockyou.txt, merges a Weakpass wordlist (appended after the frequency-ranked
 candidates), and writes all outputs used by the cracker:
@@ -30,6 +30,7 @@ from weakpass_lookup import _load_wordlist
 
 
 def main() -> None:
+    # entry point: loads both corpora, runs combined analysis, and writes all candidate outputs
     parser = argparse.ArgumentParser(
         description="Build a combined candidate list from rockyou + a Weakpass wordlist."
     )
@@ -70,24 +71,27 @@ def main() -> None:
 
     print(f"Configuration: --limit {args.limit} --top {args.top} --output-limit {args.output_limit}", flush=True)
 
-    # --- load both corpora ---
+    # load both corpora before any analysis so substitution stats reflect the full dataset
     print("Loading rockyou.txt", flush=True)
     freq = load_rockyou(ROCKYOU, limit=args.limit)
     unique_pw = len(freq)
     print(f"{unique_pw:,} unique passwords ({sum(freq.values()):,} total entries)")
 
+    # weakpass is a flat wordlist so each entry gets count=1; duplicates accumulate naturally
     weakpass_freq: Counter[str] = Counter()
     if weakpass_available:
         print(f"Loading weakpass wordlist from {args.weakpass}", flush=True)
         weakpass_freq = Counter(_load_wordlist(args.weakpass))
         print(f"{len(weakpass_freq):,} unique weakpass entries")
 
+    # Counter addition sums counts for shared keys, so rockyou frequency weights dominate
     combined_freq = freq + weakpass_freq
 
-    # --- substitution analysis on combined corpus ---
+    # substitution analysis on combined corpus
     print("Analyzing substitution patterns", flush=True)
     sub_counters = build_sub_counters(combined_freq)
 
+    # serialize substitution rules so the cracker can reference them later
     sub_rules_json: dict[str, dict[str, int]] = {
         plain: dict(cnt.most_common())
         for plain, cnt in sorted(sub_counters.items())
@@ -100,15 +104,17 @@ def main() -> None:
     print("Analyzing suffixes", flush=True)
     suffixes = top_suffixes(combined_freq, top_n=50)
 
-    # --- build ranked candidate list (rockyou order preserved) ---
+    # build ranked candidate list seeded from rockyou frequency order
     print("Building ranked candidate list from rockyou", flush=True)
     ranked: list[str] = [pw for pw, _ in freq.most_common()]
-    seen: set[str] = set(ranked)
+    seen: set[str] = set(ranked)  # tracks everything added so far for O(1) dedup
 
+    # aggregate rockyou counts under normalized base words so "password" outranks "p@ssword"
     base_freq: Counter[str] = Counter()
     for pw, count in freq.items():
         base_freq[normalize(pw)] += count
 
+    # expand each top base word into its most statistically likely leet variants
     leet_added = 0
     for base_word, _ in base_freq.most_common(args.top):
         for _, variant in generate_variants(base_word, sub_counters):
@@ -117,6 +123,7 @@ def main() -> None:
                 seen.add(variant)
                 leet_added += 1
 
+    # append common non-alpha suffixes (e.g. "123", "!") to the same top base words
     suffix_list = [suf for suf, _ in suffixes[:args.suffixes]]
     suffixes_added = 0
     for base_word, _ in base_freq.most_common(args.top):
@@ -132,7 +139,7 @@ def main() -> None:
         f"({unique_pw:,} raw + {leet_added:,} leet + {suffixes_added:,} suffix)"
     )
 
-    # --- append weakpass entries not already in the list ---
+    # append weakpass entries not already in the list
     if weakpass_available:
         new_from_weakpass = [pw for pw in weakpass_freq if pw not in seen]
         ranked.extend(new_from_weakpass)
@@ -141,7 +148,7 @@ def main() -> None:
             f"{len(new_from_weakpass):,} new appended after rockyou candidates"
         )
 
-    # --- write outputs ---
+    # write the final candidate list, honoring --output-limit if set
     total_candidates = len(ranked)
     write_limit = args.output_limit or total_candidates
     with open(CANDIDATES, 'w', encoding='utf-8') as f:

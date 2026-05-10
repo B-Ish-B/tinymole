@@ -338,12 +338,12 @@ class CrackerScreen(Screen):
                 self.app.call_from_thread(setattr, crack_btn, "disabled", False)
                 return
 
-        # step 2: weakpass API fallback
+        # step 2: online API fallback (weakpass -> hashes.com -> md5decrypt)
         stop_spin2 = threading.Event()
-        spin2 = threading.Thread(target=self._spin, args=(stop_spin2, "checking weakpass API..."), daemon=True)
+        spin2 = threading.Thread(target=self._spin, args=(stop_spin2, "checking online APIs..."), daemon=True)
         spin2.start()
 
-        log(f"querying API  hash: {hash_val}  algo: {algo}")
+        log(f"querying APIs  hash: {hash_val}  algo: {algo}")
 
         api_proc = subprocess.Popen(
             ["uv", "run", "src/python/weakpass_lookup.py", "--hash", hash_val, "--algo", algo],

@@ -301,12 +301,6 @@ class CrackerScreen(Screen):
 
             cracker_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
 
-            stdout_lines: list[str] = []
-
-            def capture_stdout() -> None:
-                for line in cracker_proc.stdout:
-                    stdout_lines.append(line)
-
             def tail_log() -> None:
                 for _ in range(30):
                     if LOG_PATH.exists():
@@ -329,18 +323,25 @@ class CrackerScreen(Screen):
                 except OSError:
                     pass
 
-            stdout_thread = threading.Thread(target=capture_stdout, daemon=True)
             tail = threading.Thread(target=tail_log, daemon=True)
-            stdout_thread.start()
             tail.start()
 
             cracker_proc.wait()
             stop_spin.set()
             spin.join()
-
-            stdout_thread.join(timeout=2)
             tail.join(timeout=1)
-            crack_result = "".join(stdout_lines).strip()
+
+            # parse result from log file -- more reliable than stdout pipe
+            crack_result = ""
+            try:
+                for line in reversed(LOG_PATH.read_text().splitlines()):
+                    if "CRACKED in" in line and " ms: " in line:
+                        crack_result = "cracked: " + line.split(" ms: ", 1)[1].strip()
+                        break
+                    if "NOT FOUND" in line:
+                        break
+            except OSError:
+                pass
 
             if crack_result.startswith("cracked:"):
                 self.app.call_from_thread(self._set_status, f" {crack_result}", "found")

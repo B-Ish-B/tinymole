@@ -3,12 +3,11 @@
 '''
 @author Ismail Alwahsh
 @since May 9, 2026
-@description: Online hash lookup utility. Queries Weakpass and hashes.com in
-sequence and returns the plaintext password from whichever service finds it
-first. Both are free with no API key required. Results are cached in
-data/weakpass_cache.json so the same hash is never queried twice. Exits 0
-with "cracked: <password> (via <service>)" on a hit, exits 1 on a miss.
-Supports MD5, SHA-1, and SHA-256.
+@description: Online hash lookup utility. Queries the Weakpass REST API and
+returns the plaintext password if found. Free, no API key required. Results
+are cached in data/weakpass_cache.json so the same hash is never queried
+twice. Exits 0 with "cracked: <password> (via weakpass)" on a hit, exits 1
+on a miss. Supports MD5, SHA-1, and SHA-256.
 '''
 
 import argparse
@@ -39,26 +38,8 @@ def _try_weakpass(client: httpx.Client, hash_hex: str) -> str | None:
     try:
         r = client.get(f"https://weakpass.com/api/v1/search/{hash_hex}", timeout=10)
         if r.status_code == 200:
-            return r.json().get("password")
+            return r.json().get("pass")  # API returns "pass", not "password"
     except httpx.RequestError:
-        pass
-    return None
-
-
-def _try_hashes_com(client: httpx.Client, hash_hex: str) -> str | None:
-    try:
-        r = client.post(
-            "https://hashes.com/en/api/search",
-            data={"hashes[]": hash_hex},
-            timeout=10,
-        )
-        if r.status_code == 200:
-            data = r.json()
-            # response is a list of objects with "hash" and "plaintext" fields
-            for entry in data.get("result", []):
-                if entry.get("hash", "").lower() == hash_hex.lower():
-                    return entry.get("plaintext") or None
-    except (httpx.RequestError, ValueError):
         pass
     return None
 
@@ -73,8 +54,7 @@ def lookup(hash_hex: str, algo: str = "md5") -> tuple[str | None, str | None]:
         return entry, "cache"
 
     services = [
-        ("weakpass",   lambda c: _try_weakpass(c, hash_hex)),
-        ("hashes.com", lambda c: _try_hashes_com(c, hash_hex)),
+        ("weakpass", lambda c: _try_weakpass(c, hash_hex)),
     ]
 
     with httpx.Client() as client:

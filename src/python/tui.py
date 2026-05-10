@@ -2,15 +2,19 @@
 
 # @author Ish
 # @since May 2026
-# TUI for tinymole. Splash screen shows ASCII banner, then transitions to a
-# two-panel interface: left = config form, right = live log tail.
+# TUI for tinymole. Prints the ASCII splash directly to the raw terminal
+# (same rendering path as neofetch/fastfetch -- no framework cell gaps),
+# then launches a Textual two-panel interface: left = config form,
+# right = live log tail from logs/cracker.log.
 
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
 
 import pyfiglet
+from rich.console import Console
 from rich.text import Text
 from textual import on
 from textual.app import App, ComposeResult
@@ -20,33 +24,19 @@ from textual.widgets import Button, Input, Label, Log, Select, Static
 
 LOG_PATH = Path("logs/cracker.log")
 
-# banner3 uses only '#' characters — no gaps in any terminal font.
-BANNER = pyfiglet.figlet_format("tinymole", font="banner3").rstrip()
 
-
-class SplashScreen(Screen):
-    CSS = """
-    SplashScreen {
-        align: center middle;
-        background: $background;
-    }
-    #banner {
-        color: $accent;
-        text-align: center;
-    }
-    #hint {
-        color: $text-muted;
-        text-align: center;
-        margin-top: 2;
-    }
-    """
-
-    def compose(self) -> ComposeResult:
-        yield Static(Text(BANNER, no_wrap=True), id="banner")
-        yield Static(Text("press any key to start", no_wrap=True), id="hint")
-
-    def on_key(self) -> None:
-        self.app.switch_screen(CrackerScreen())
+def _show_splash() -> None:
+    console = Console()
+    banner = pyfiglet.figlet_format("tinymole", font="standard")
+    console.print()
+    for line in banner.splitlines():
+        console.print(line, style="bold color(214)", justify="center", highlight=False)
+    console.print()
+    console.print("press [bold]enter[/bold] to start", justify="center")
+    try:
+        input()
+    except (EOFError, KeyboardInterrupt):
+        sys.exit(0)
 
 
 class CrackerScreen(Screen):
@@ -86,16 +76,16 @@ class CrackerScreen(Screen):
         padding: 1 2;
     }
 
-    #log-view {
-        height: 1fr;
-        border: none;
-        background: $background;
-    }
-
     #log-header {
         height: 1;
         color: $text-muted;
         margin-bottom: 1;
+    }
+
+    #log-view {
+        height: 1fr;
+        border: none;
+        background: $background;
     }
 
     #status {
@@ -128,21 +118,21 @@ class CrackerScreen(Screen):
                 yield Button("Crack", id="crack-btn", variant="primary")
 
         with Vertical(id="log-panel"):
-            yield Static(Text("log", no_wrap=True), id="log-header")
+            yield Static("log", id="log-header")
             yield Log(id="log-view", auto_scroll=True)
 
-        yield Static(Text(" ready", no_wrap=True), id="status")
+        yield Static(" ready", id="status")
 
     @on(Button.Pressed, "#crack-btn")
     def start_crack(self) -> None:
-        hash_val   = self.query_one("#hash-input",       Input).value.strip()
-        algo       = self.query_one("#algo-select",      Select).value
-        threads    = self.query_one("#threads-input",    Input).value.strip() or "4"
-        wordlist   = self.query_one("#wordlist-input",   Input).value.strip()
-        candidates = self.query_one("#candidates-input", Input).value.strip()
+        hash_val   = self.query_one("#hash-input",        Input).value.strip()
+        algo       = self.query_one("#algo-select",       Select).value
+        threads    = self.query_one("#threads-input",     Input).value.strip() or "4"
+        wordlist   = self.query_one("#wordlist-input",    Input).value.strip()
+        candidates = self.query_one("#candidates-input",  Input).value.strip()
 
         if not hash_val:
-            self.query_one("#status", Static).update(Text(" error: hash is required"))
+            self.query_one("#status", Static).update(" error: hash is required")
             return
 
         cmd = [
@@ -156,7 +146,7 @@ class CrackerScreen(Screen):
             cmd += ["--candidates", candidates]
 
         self.query_one("#log-view", Log).clear()
-        self.query_one("#status", Static).update(Text(" running..."))
+        self.query_one("#status", Static).update(" running...")
         self.query_one("#crack-btn", Button).disabled = True
 
         threading.Thread(target=self._run, args=(cmd,), daemon=True).start()
@@ -200,7 +190,7 @@ class CrackerScreen(Screen):
         tail.join(timeout=1)
 
         label = f" {result}" if result else " not found"
-        self.app.call_from_thread(status.update, Text(label))
+        self.app.call_from_thread(status.update, label)
         self.app.call_from_thread(setattr, crack_btn, "disabled", False)
 
 
@@ -209,8 +199,9 @@ class TinyMole(App):
     BINDINGS = [("q", "quit", "Quit")]
 
     def on_mount(self) -> None:
-        self.push_screen(SplashScreen())
+        self.push_screen(CrackerScreen())
 
 
 if __name__ == "__main__":
+    _show_splash()
     TinyMole().run()

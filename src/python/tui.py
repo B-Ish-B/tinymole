@@ -25,9 +25,18 @@ from textual.widgets import Button, Input, Label, Log, Select, Static
 LOG_PATH = Path("logs/cracker.log")
 
 
+def _make_banner() -> str:
+    lines = pyfiglet.figlet_format("tinymole", font="standard").splitlines()
+    lines[1] = lines[1].replace("(_)", "| |", 1)  # i dot (_) looks like a face
+    lines = [l for l in lines if l.strip() != "|___/"]  # remove isolated y descender
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return "\n".join(lines)
+
+
 def _show_splash() -> None:
     console = Console()
-    banner = pyfiglet.figlet_format("tinymole", font="standard")
+    banner = _make_banner()
     console.print()
     for line in banner.splitlines():
         console.print(line, style="bold color(214)", justify="center", highlight=False)

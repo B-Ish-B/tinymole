@@ -1,4 +1,4 @@
 name,iterations,real_time,cpu_time,time_unit,bytes_per_second,items_per_second,label,error_occurred,error_message
-"BM_TinyPtr_Miss",16149269,47.1736,46.7026,ns,,2.14121e+07,,,
-"BM_Naive_Miss",14424554,50.3493,49.8098,ns,,2.00764e+07,,,
-"BM_StdMap_Miss",2524874,282.247,278.907,ns,,3.58542e+06,,,
+"BM_TinyPtr_Miss",45555383,15.1012,15.1858,ns,,6.58511e+07,,,
+"BM_Naive_Miss",37806264,18.5583,18.6622,ns,,5.35842e+07,,,
+"BM_StdMap_Miss",5806921,111.432,112.055,ns,,8.92417e+06,,,

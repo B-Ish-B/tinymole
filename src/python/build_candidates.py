@@ -12,7 +12,7 @@ candidates), and writes all outputs used by the cracker:
   results/substitution_analysis_all.png
   results/substitution_analysis_leet.png
 
-Delegates dataset-specific logic to frequency_analysis.py and weakpass_lookup.py.
+Delegates dataset-specific logic to frequency_analysis.py and merge_wordlists.py.
 '''
 
 import argparse
@@ -26,7 +26,7 @@ from frequency_analysis import (
     load_rockyou, build_sub_counters, generate_variants,
     top_suffixes, plot_substitutions, normalize,
 )
-from weakpass_lookup import _load_wordlist
+from merge_wordlists import _load_wordlist
 
 
 def main() -> None:

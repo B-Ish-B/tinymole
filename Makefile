@@ -12,7 +12,7 @@ ALGO     ?= md5
 THREADS  ?= 4
 WORDLIST ?= data/rockyou.txt
 
-.PHONY: all debug tsan test bench crack lookup tui clean
+.PHONY: all debug tsan test bench crack lookup tui plots clean
 
 all: build/cracker
 
@@ -94,6 +94,9 @@ crack: build/cracker data/candidates_ranked.txt
 
 tui: build/cracker
 	uv run src/python/tui.py
+
+plots:
+	uv run src/python/plot_results.py
 
 lookup:
 	@if [ -z "$(HASH)" ]; then echo "error: HASH is required. Usage: make lookup HASH=<hex>"; exit 1; fi

@@ -246,6 +246,7 @@ Requires the cracker binary to be built first (`make all`). The TUI is implement
 | `make bench` | Build and run Google Benchmark microbenchmarks | `CXXFLAGS_RELEASE` |
 | `make crack HASH=<hex>` | Build cracker, run frequency analysis if needed, then crack | `HASH`, `ALGO`, `THREADS`, `WORDLIST` |
 | `make tui` | Launch the interactive terminal UI | n/a |
+| `make plots` | Generate benchmark visualization PNGs from `results/` | n/a |
 | `make lookup HASH=<hex>` | Query weakpass API for a hash before local cracking | `HASH`, `ALGO` |
 | `make clean` | Remove all build artifacts | n/a |
 

@@ -163,8 +163,8 @@ def plot_substitutions(
     print(f"Chart saved to {out_path}")
 
 
+# Use build_candidates.py for the full pipeline (uses full wordlist); this runs rock you only analysis
 def main() -> None:
-    # entry point: loads rockyou, analyzes substitution patterns, and writes all outputs
     parser = argparse.ArgumentParser(
         description="Frequency analysis engine: produces ranked candidates and substitution rules."
     )

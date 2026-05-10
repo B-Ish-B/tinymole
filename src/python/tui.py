@@ -7,9 +7,9 @@
 directly to the raw terminal on startup, then launches a Textual two-panel
 interface. Left panel is a configuration form (hash, algorithm, thread count,
 wordlist, candidates). Right panel tails logs/cracker.log live as the cracker
-runs. If the wordlist file is missing the UI falls back to the Weakpass API
-and logs the lookup progress in the right panel. Result is shown in the status
-bar at the bottom when the run finishes.
+runs. Always checks the Weakpass API first as a fast preliminary lookup before
+starting the local cracker. A spinner in the status bar shows when a run is
+active; the bar changes color on finish to indicate found or not found.
 '''
 
 import subprocess
@@ -28,6 +28,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Log, Select, Static
 
 LOG_PATH = Path("logs/cracker.log")
+_SPINNER = "|/-\\"
 
 
 def _make_banner() -> str:
@@ -61,15 +62,11 @@ def _tab_complete(current: str) -> str:
     parent = p.parent if not current.endswith('/') else p
     prefix = p.name if not current.endswith('/') else ''
     try:
-        matches = sorted(
-            c for c in parent.iterdir()
-            if c.name.startswith(prefix)
-        )
+        matches = sorted(c for c in parent.iterdir() if c.name.startswith(prefix))
     except (OSError, PermissionError):
         return current
     if not matches:
         return current
-    # Cycle: if current already matches the last entry, wrap to the first
     match = matches[0]
     for i, m in enumerate(matches):
         if str(m) == current:
@@ -89,7 +86,6 @@ class PathInput(Input):
             event.stop()
             return
 
-        # ctrl+w and ctrl+backspace: delete word to the left
         if event.key in ('ctrl+w', 'ctrl+backspace'):
             pos = self.cursor_position
             val = self.value
@@ -103,7 +99,6 @@ class PathInput(Input):
             event.stop()
             return
 
-        # ctrl+delete: delete word to the right
         if event.key == 'ctrl+delete':
             pos = self.cursor_position
             val = self.value
@@ -117,14 +112,12 @@ class PathInput(Input):
             event.stop()
             return
 
-        # ctrl+u: clear the whole line
         if event.key == 'ctrl+u':
             self.value = ''
             event.prevent_default()
             event.stop()
             return
 
-        # ctrl+k: delete from cursor to end of line
         if event.key == 'ctrl+k':
             self.value = self.value[:self.cursor_position]
             event.prevent_default()
@@ -188,6 +181,21 @@ class CrackerScreen(Screen):
         color: $background;
         padding: 0 1;
     }
+
+    #status.found {
+        background: $success;
+        color: $background;
+    }
+
+    #status.not-found {
+        background: $error;
+        color: $background;
+    }
+
+    #status.running {
+        background: $warning;
+        color: $background;
+    }
     """
 
     def compose(self) -> ComposeResult:
@@ -204,7 +212,7 @@ class CrackerScreen(Screen):
                 yield Label("Threads", classes="field-label")
                 yield PathInput(value="4", id="threads-input")
                 yield Label("Wordlist", classes="field-label")
-                yield Label("leave blank to use weakpass API", classes="field-note")
+                yield Label("leave blank to use weakpass API only", classes="field-note")
                 yield PathInput(placeholder="data/rockyou.txt", id="wordlist-input")
                 yield Label("Candidates", classes="field-label")
                 yield Label("leave blank to use wordlist", classes="field-note")
@@ -217,6 +225,25 @@ class CrackerScreen(Screen):
 
         yield Static(" ready", id="status")
 
+    def _set_status(self, text: str, css_class: str) -> None:
+        status = self.query_one("#status", Static)
+        status.update(text)
+        status.set_classes(css_class)
+
+    def _spin(self, stop_event: threading.Event, phase_label: str) -> None:
+        status = self.query_one("#status", Static)
+        i = 0
+        while not stop_event.is_set():
+            frame = _SPINNER[i % len(_SPINNER)]
+            self.app.call_from_thread(
+                lambda f=frame, p=phase_label: (
+                    status.update(f" {f}  {p}"),
+                    status.set_classes("running"),
+                )
+            )
+            i += 1
+            time.sleep(0.1)
+
     @on(Button.Pressed, "#crack-btn")
     def start_crack(self) -> None:
         hash_val   = self.query_one("#hash-input",        Input).value.strip()
@@ -226,44 +253,36 @@ class CrackerScreen(Screen):
         candidates = self.query_one("#candidates-input",  Input).value.strip()
 
         if not hash_val:
-            self.query_one("#status", Static).update(" error: hash is required")
+            self._set_status(" error: hash is required", "not-found")
             return
 
         self.query_one("#log-view", Log).clear()
-        self.query_one("#status", Static).update(" running...")
+        self._set_status(" starting...", "running")
         self.query_one("#crack-btn", Button).disabled = True
 
         wordlist_exists = bool(wordlist) and Path(wordlist).exists()
 
-        if not wordlist_exists:
-            threading.Thread(
-                target=self._run_api,
-                args=(hash_val, algo),
-                daemon=True,
-            ).start()
-        else:
-            cmd = [
-                "./build/cracker",
-                "--hash",     hash_val,
-                "--algo",     algo,
-                "--wordlist", wordlist,
-                "--threads",  threads,
-            ]
-            if candidates:
-                cmd += ["--candidates", candidates]
-            threading.Thread(target=self._run_cracker, args=(cmd,), daemon=True).start()
+        threading.Thread(
+            target=self._run,
+            args=(hash_val, algo, threads, wordlist if wordlist_exists else "", candidates),
+            daemon=True,
+        ).start()
 
-    def _run_api(self, hash_val: str, algo: str) -> None:
-        log_widget = self.query_one("#log-view",  Log)
-        status     = self.query_one("#status",    Static)
+    def _run(self, hash_val: str, algo: str, threads: str, wordlist: str, candidates: str) -> None:
+        log_widget = self.query_one("#log-view", Log)
         crack_btn  = self.query_one("#crack-btn", Button)
 
         def log(msg: str) -> None:
             self.app.call_from_thread(log_widget.write_line, msg)
 
-        log("no local wordlist -- querying weakpass API")
+        stop_spin = threading.Event()
+
+        # --- step 1: weakpass API check ---
+        spin = threading.Thread(target=self._spin, args=(stop_spin, "checking weakpass API..."), daemon=True)
+        spin.start()
+
+        log("--- weakpass API lookup ---")
         log(f"hash: {hash_val}  algo: {algo}")
-        log("")
 
         proc = subprocess.Popen(
             ["uv", "run", "src/python/weakpass_lookup.py", "--hash", hash_val, "--algo", algo],
@@ -271,31 +290,55 @@ class CrackerScreen(Screen):
             stderr=subprocess.PIPE,
             text=True,
         )
-        stdout, stderr = proc.communicate()
+        api_stdout, api_stderr = proc.communicate()
 
-        for line in (stdout + stderr).strip().splitlines():
+        for line in (api_stdout + api_stderr).strip().splitlines():
             log(line)
 
-        result = stdout.strip()
-        label = f" {result}" if result else " not found"
-        self.app.call_from_thread(status.update, label)
-        self.app.call_from_thread(setattr, crack_btn, "disabled", False)
+        stop_spin.set()
+        spin.join()
 
-    def _run_cracker(self, cmd: list[str]) -> None:
-        log_widget = self.query_one("#log-view",  Log)
-        status     = self.query_one("#status",    Static)
-        crack_btn  = self.query_one("#crack-btn", Button)
+        api_result = api_stdout.strip()
+        if api_result.startswith("cracked:"):
+            self.app.call_from_thread(self._set_status, f" {api_result}", "found")
+            self.app.call_from_thread(setattr, crack_btn, "disabled", False)
+            return
 
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
+        log("not found via API")
+
+        if not wordlist:
+            log("no local wordlist provided -- stopping")
+            self.app.call_from_thread(self._set_status, " not found", "not-found")
+            self.app.call_from_thread(setattr, crack_btn, "disabled", False)
+            return
+
+        # --- step 2: local cracker ---
+        log("")
+        log("--- local crack ---")
+
+        cmd = [
+            "./build/cracker",
+            "--hash",     hash_val,
+            "--algo",     algo,
+            "--wordlist", wordlist,
+            "--threads",  threads,
+        ]
+        if candidates:
+            cmd += ["--candidates", candidates]
+
+        stop_spin2 = threading.Event()
+        spin2 = threading.Thread(target=self._spin, args=(stop_spin2, "cracking..."), daemon=True)
+        spin2.start()
+
+        cracker_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
 
         def tail_log() -> None:
             for _ in range(30):
                 if LOG_PATH.exists():
                     break
                 time.sleep(0.1)
-
             seen = 0
-            while proc.poll() is None:
+            while cracker_proc.poll() is None:
                 try:
                     lines = LOG_PATH.read_text().splitlines()
                     for line in lines[seen:]:
@@ -304,7 +347,6 @@ class CrackerScreen(Screen):
                 except OSError:
                     pass
                 time.sleep(0.15)
-
             try:
                 lines = LOG_PATH.read_text().splitlines()
                 for line in lines[seen:]:
@@ -315,12 +357,18 @@ class CrackerScreen(Screen):
         tail = threading.Thread(target=tail_log, daemon=True)
         tail.start()
 
-        proc.wait()
-        result = (proc.stdout.read() or "").strip()
+        cracker_proc.wait()
+        stop_spin2.set()
+        spin2.join()
+
+        crack_result = (cracker_proc.stdout.read() or "").strip()
         tail.join(timeout=1)
 
-        label = f" {result}" if result else " not found"
-        self.app.call_from_thread(status.update, label)
+        if crack_result.startswith("cracked:"):
+            self.app.call_from_thread(self._set_status, f" {crack_result}", "found")
+        else:
+            self.app.call_from_thread(self._set_status, " not found", "not-found")
+
         self.app.call_from_thread(setattr, crack_btn, "disabled", False)
 
 

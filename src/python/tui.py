@@ -282,23 +282,79 @@ class CrackerScreen(Screen):
             self.app.call_from_thread(log_widget.write_line, line)
 
         stop_spin = threading.Event()
+        crack_result = ""
 
-        # step 1: weakpass API check
-        spin = threading.Thread(target=self._spin, args=(stop_spin, "checking weakpass API..."), daemon=True)
-        spin.start()
+        # step 1: local cracker (if wordlist provided)
+        if wordlist:
+            cmd = [
+                "./build/cracker",
+                "--hash",     hash_val,
+                "--algo",     algo,
+                "--wordlist", wordlist,
+                "--threads",  threads,
+            ]
+            if candidates:
+                cmd += ["--candidates", candidates]
+
+            spin = threading.Thread(target=self._spin, args=(stop_spin, "cracking..."), daemon=True)
+            spin.start()
+
+            cracker_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
+
+            def tail_log() -> None:
+                for _ in range(30):
+                    if LOG_PATH.exists():
+                        break
+                    time.sleep(0.1)
+                seen = 0
+                while cracker_proc.poll() is None:
+                    try:
+                        lines = LOG_PATH.read_text().splitlines()
+                        for line in lines[seen:]:
+                            self.app.call_from_thread(log_widget.write_line, line)
+                        seen = len(lines)
+                    except OSError:
+                        pass
+                    time.sleep(0.15)
+                try:
+                    lines = LOG_PATH.read_text().splitlines()
+                    for line in lines[seen:]:
+                        self.app.call_from_thread(log_widget.write_line, line)
+                except OSError:
+                    pass
+
+            tail = threading.Thread(target=tail_log, daemon=True)
+            tail.start()
+
+            cracker_proc.wait()
+            stop_spin.set()
+            spin.join()
+
+            crack_result = (cracker_proc.stdout.read() or "").strip()
+            tail.join(timeout=1)
+
+            if crack_result.startswith("cracked:"):
+                self.app.call_from_thread(self._set_status, f" {crack_result}", "found")
+                self.app.call_from_thread(setattr, crack_btn, "disabled", False)
+                return
+
+        # step 2: weakpass API fallback
+        stop_spin2 = threading.Event()
+        spin2 = threading.Thread(target=self._spin, args=(stop_spin2, "checking weakpass API..."), daemon=True)
+        spin2.start()
 
         log(f"querying API  hash: {hash_val}  algo: {algo}")
 
-        proc = subprocess.Popen(
+        api_proc = subprocess.Popen(
             ["uv", "run", "src/python/weakpass_lookup.py", "--hash", hash_val, "--algo", algo],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
         )
-        api_stdout, _ = proc.communicate()
+        api_stdout, _ = api_proc.communicate()
 
-        stop_spin.set()
-        spin.join()
+        stop_spin2.set()
+        spin2.join()
 
         api_result = api_stdout.strip()
         if api_result.startswith("cracked:"):
@@ -308,67 +364,7 @@ class CrackerScreen(Screen):
             return
 
         log("not found via API")
-
-        if not wordlist:
-            self.app.call_from_thread(self._set_status, " not found", "not-found")
-            self.app.call_from_thread(setattr, crack_btn, "disabled", False)
-            return
-
-        # step 2: local cracker
-
-        cmd = [
-            "./build/cracker",
-            "--hash",     hash_val,
-            "--algo",     algo,
-            "--wordlist", wordlist,
-            "--threads",  threads,
-        ]
-        if candidates:
-            cmd += ["--candidates", candidates]
-
-        stop_spin2 = threading.Event()
-        spin2 = threading.Thread(target=self._spin, args=(stop_spin2, "cracking..."), daemon=True)
-        spin2.start()
-
-        cracker_proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
-
-        def tail_log() -> None:
-            for _ in range(30):
-                if LOG_PATH.exists():
-                    break
-                time.sleep(0.1)
-            seen = 0
-            while cracker_proc.poll() is None:
-                try:
-                    lines = LOG_PATH.read_text().splitlines()
-                    for line in lines[seen:]:
-                        self.app.call_from_thread(log_widget.write_line, line)
-                    seen = len(lines)
-                except OSError:
-                    pass
-                time.sleep(0.15)
-            try:
-                lines = LOG_PATH.read_text().splitlines()
-                for line in lines[seen:]:
-                    self.app.call_from_thread(log_widget.write_line, line)
-            except OSError:
-                pass
-
-        tail = threading.Thread(target=tail_log, daemon=True)
-        tail.start()
-
-        cracker_proc.wait()
-        stop_spin2.set()
-        spin2.join()
-
-        crack_result = (cracker_proc.stdout.read() or "").strip()
-        tail.join(timeout=1)
-
-        if crack_result.startswith("cracked:"):
-            self.app.call_from_thread(self._set_status, f" {crack_result}", "found")
-        else:
-            self.app.call_from_thread(self._set_status, " not found", "not-found")
-
+        self.app.call_from_thread(self._set_status, " not found", "not-found")
         self.app.call_from_thread(setattr, crack_btn, "disabled", False)
 
 

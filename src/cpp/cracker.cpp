@@ -1,3 +1,11 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 10, 2026
+ * @description: partition_candidates implementation. Distributes candidates
+ * round-robin across num_threads buckets so each thread tries passwords at
+ * every frequency rank rather than one thread getting all the top candidates.
+ */
+
 #include "src/cpp/cracker.hpp"
 
 std::vector<std::vector<std::string>> partition_candidates(

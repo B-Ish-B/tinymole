@@ -3,11 +3,11 @@
 '''
 @author Ismail Alwahsh
 @since May 9, 2026
-@description: Hash lookup utility. Queries multiple online APIs in sequence
-(Weakpass, hashes.com, md5decrypt.net) and returns the plaintext password if
-any service finds it. Results are cached in data/weakpass_cache.json so the
-same hash is never queried twice. Exits 0 with "cracked: <password>" on a hit,
-exits 1 on a miss. Intended to run as a fast check before or after local cracking.
+@description: Online hash lookup utility. Queries Weakpass, hashes.com, and
+md5decrypt.net in sequence and returns the plaintext password from whichever
+service finds it first. Results are cached in data/weakpass_cache.json so the
+same hash is never queried twice. Exits 0 with "cracked: <password> (via <service>)"
+on a hit, exits 1 on a miss. Supports MD5, SHA-1, and SHA-256.
 '''
 
 import argparse

@@ -277,12 +277,9 @@ class CrackerScreen(Screen):
 
         stop_spin = threading.Event()
 
-        # --- step 1: weakpass API check ---
+        # step 1: weakpass API check
         spin = threading.Thread(target=self._spin, args=(stop_spin, "checking weakpass API..."), daemon=True)
         spin.start()
-
-        log("--- weakpass API lookup ---")
-        log(f"hash: {hash_val}  algo: {algo}")
 
         proc = subprocess.Popen(
             ["uv", "run", "src/python/weakpass_lookup.py", "--hash", hash_val, "--algo", algo],
@@ -290,31 +287,26 @@ class CrackerScreen(Screen):
             stderr=subprocess.PIPE,
             text=True,
         )
-        api_stdout, api_stderr = proc.communicate()
-
-        for line in (api_stdout + api_stderr).strip().splitlines():
-            log(line)
+        api_stdout, _ = proc.communicate()
 
         stop_spin.set()
         spin.join()
 
         api_result = api_stdout.strip()
         if api_result.startswith("cracked:"):
+            log(f"weakpass: {api_result}")
             self.app.call_from_thread(self._set_status, f" {api_result}", "found")
             self.app.call_from_thread(setattr, crack_btn, "disabled", False)
             return
 
-        log("not found via API")
+        log("weakpass: not found")
 
         if not wordlist:
-            log("no local wordlist provided -- stopping")
             self.app.call_from_thread(self._set_status, " not found", "not-found")
             self.app.call_from_thread(setattr, crack_btn, "disabled", False)
             return
 
-        # --- step 2: local cracker ---
-        log("")
-        log("--- local crack ---")
+        # step 2: local cracker
 
         cmd = [
             "./build/cracker",

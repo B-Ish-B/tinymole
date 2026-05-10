@@ -275,7 +275,10 @@ class CrackerScreen(Screen):
         pid = os.getpid()
 
         def log(msg: str) -> None:
-            line = f"[{pid}] weakpass_lookup.py    LOG_INFO    weakpass    {msg}"
+            import datetime
+            now = datetime.datetime.now()
+            ts = now.strftime("%H:%M:%S.") + f"{now.microsecond * 1000:09d}"
+            line = f"{ts} [{pid}] weakpass_lookup.py    LOG_INFO    weakpass    {msg}"
             self.app.call_from_thread(log_widget.write_line, line)
 
         stop_spin = threading.Event()

@@ -1,3 +1,13 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 10, 2026
+ * @description: Tiny pointer encoding used by the hash table slots. Packs a
+ * 27-bit pool byte offset and a 5-bit password length into a single uint32,
+ * keeping each hash table slot at 24 bytes instead of 32. PasswordPool stores
+ * all password strings in a flat char vector and returns tiny_ptr handles.
+ * Max supported password length is 31 bytes; max pool size is 128 MB.
+ */
+
 #pragma once
 
 #include <cstdint>

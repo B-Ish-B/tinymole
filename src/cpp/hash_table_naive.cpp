@@ -1,3 +1,12 @@
+/*
+ * @author Ismail Alwahsh
+ * @since May 10, 2026
+ * @description: Naive open-addressed hash table implementation. Same linear
+ * probe structure as HashTable but stores full 8-byte offsets instead of
+ * tiny pointers, making each slot 32 bytes. Used as the baseline to measure
+ * how much the pointer compression saves in cache pressure.
+ */
+
 #include "src/cpp/hash_table_naive.hpp"
 
 #include <chrono>

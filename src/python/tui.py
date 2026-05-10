@@ -10,22 +10,24 @@ import threading
 import time
 from pathlib import Path
 
+from rich.text import Text
 from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import Vertical
+from textual.containers import ScrollableContainer, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Input, Label, Log, Select, Static
+from textual.widgets import Button, Footer, Input, Label, Log, Select, Static
 
 LOG_PATH = Path("logs/cracker.log")
 
-BANNER = r"""
- _   _                           _
-| |_(_)_ __  _   _ _ __ ___  ___| | ___
-| __| | '_ \| | | | '_ ` _ \/ _ \ |/ _ \
-| |_| | | | | |_| | | | | | |  __/ |  __/
- \__|_|_| |_|\__, |_| |_| |_|\___|_|\___|
-             |___/
-"""
+# Rendered with figlet standard font. Passed as rich.Text to bypass markup parsing.
+BANNER = (
+    " _   _                           _      \n"
+    "| |_(_)_ __  _   _ _ __ ___  ___| | ___ \n"
+    "| __| | '_ \\| | | | '_ ` _ \\/ _ \\ |/ _ \\\n"
+    "| |_| | | | | |_| | | | | | |  __/ |  __/\n"
+    " \\__|_|_| |_|\\__, |_| |_| |_|\\___|_|\\___|\n"
+    "             |___/                        "
+)
 
 
 class SplashScreen(Screen):
@@ -37,7 +39,6 @@ class SplashScreen(Screen):
     #banner {
         color: $accent;
         text-align: center;
-        text-style: bold;
     }
     #hint {
         color: $text-muted;
@@ -47,8 +48,8 @@ class SplashScreen(Screen):
     """
 
     def compose(self) -> ComposeResult:
-        yield Static(BANNER, id="banner")
-        yield Static("press any key to start", id="hint")
+        yield Static(Text(BANNER, no_wrap=True), id="banner")
+        yield Static(Text("press any key to start", no_wrap=True), id="hint")
 
     def on_key(self) -> None:
         self.app.switch_screen(CrackerScreen())
@@ -59,24 +60,50 @@ class CrackerScreen(Screen):
     CrackerScreen {
         layout: horizontal;
     }
+
     #sidebar {
-        width: 36;
-        min-width: 36;
-        padding: 1 2;
+        width: 42;
         border-right: solid $accent;
     }
-    #log-panel {
-        width: 1fr;
+
+    #sidebar-scroll {
         padding: 1 2;
+        height: 1fr;
     }
+
     .field-label {
         color: $text-muted;
+        height: 1;
         margin-top: 1;
     }
+
+    .field-note {
+        color: $text-disabled;
+        height: 1;
+    }
+
     #crack-btn {
         margin-top: 2;
         width: 100%;
     }
+
+    #log-panel {
+        width: 1fr;
+        padding: 1 2;
+    }
+
+    #log-view {
+        height: 1fr;
+        border: none;
+        background: $background;
+    }
+
+    #log-header {
+        height: 1;
+        color: $text-muted;
+        margin-bottom: 1;
+    }
+
     #status {
         dock: bottom;
         height: 1;
@@ -88,35 +115,40 @@ class CrackerScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="sidebar"):
-            yield Label("Hash", classes="field-label")
-            yield Input(placeholder="hex-encoded hash", id="hash-input")
-            yield Label("Algorithm", classes="field-label")
-            yield Select(
-                [("MD5", "md5"), ("SHA-1", "sha1"), ("SHA-256", "sha256")],
-                id="algo-select",
-                value="md5",
-            )
-            yield Label("Threads", classes="field-label")
-            yield Input(placeholder="4", value="4", id="threads-input")
-            yield Label("Wordlist", classes="field-label")
-            yield Input(value="data/rockyou.txt", id="wordlist-input")
-            yield Label("Candidates  (leave blank = wordlist)", classes="field-label")
-            yield Input(placeholder="data/candidates_ranked.txt", id="candidates-input")
-            yield Button("Crack", id="crack-btn", variant="primary")
+            with ScrollableContainer(id="sidebar-scroll"):
+                yield Label("Hash", classes="field-label")
+                yield Input(placeholder="hex-encoded hash", id="hash-input")
+                yield Label("Algorithm", classes="field-label")
+                yield Select(
+                    [("MD5", "md5"), ("SHA-1", "sha1"), ("SHA-256", "sha256")],
+                    id="algo-select",
+                    value="md5",
+                )
+                yield Label("Threads", classes="field-label")
+                yield Input(value="4", id="threads-input")
+                yield Label("Wordlist", classes="field-label")
+                yield Input(value="data/rockyou.txt", id="wordlist-input")
+                yield Label("Candidates", classes="field-label")
+                yield Label("leave blank to use wordlist", classes="field-note")
+                yield Input(placeholder="data/candidates_ranked.txt", id="candidates-input")
+                yield Button("Crack", id="crack-btn", variant="primary")
+
         with Vertical(id="log-panel"):
+            yield Static(Text("log", no_wrap=True), id="log-header")
             yield Log(id="log-view", auto_scroll=True)
-        yield Static(" ready", id="status")
+
+        yield Static(Text(" ready", no_wrap=True), id="status")
 
     @on(Button.Pressed, "#crack-btn")
     def start_crack(self) -> None:
-        hash_val    = self.query_one("#hash-input",      Input).value.strip()
-        algo        = self.query_one("#algo-select",     Select).value
-        threads     = self.query_one("#threads-input",   Input).value.strip() or "4"
-        wordlist    = self.query_one("#wordlist-input",  Input).value.strip()
-        candidates  = self.query_one("#candidates-input", Input).value.strip()
+        hash_val   = self.query_one("#hash-input",       Input).value.strip()
+        algo       = self.query_one("#algo-select",      Select).value
+        threads    = self.query_one("#threads-input",    Input).value.strip() or "4"
+        wordlist   = self.query_one("#wordlist-input",   Input).value.strip()
+        candidates = self.query_one("#candidates-input", Input).value.strip()
 
         if not hash_val:
-            self.query_one("#status", Static).update(" error: hash is required")
+            self.query_one("#status", Static).update(Text(" error: hash is required"))
             return
 
         cmd = [
@@ -130,15 +162,15 @@ class CrackerScreen(Screen):
             cmd += ["--candidates", candidates]
 
         self.query_one("#log-view", Log).clear()
-        self.query_one("#status", Static).update(" running...")
+        self.query_one("#status", Static).update(Text(" running..."))
         self.query_one("#crack-btn", Button).disabled = True
 
         threading.Thread(target=self._run, args=(cmd,), daemon=True).start()
 
     def _run(self, cmd: list[str]) -> None:
-        log_widget  = self.query_one("#log-view",  Log)
-        status      = self.query_one("#status",    Static)
-        crack_btn   = self.query_one("#crack-btn", Button)
+        log_widget = self.query_one("#log-view",  Log)
+        status     = self.query_one("#status",    Static)
+        crack_btn  = self.query_one("#crack-btn", Button)
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
 
@@ -174,13 +206,13 @@ class CrackerScreen(Screen):
         tail.join(timeout=1)
 
         label = f" {result}" if result else " not found"
-        self.app.call_from_thread(status.update, label)
+        self.app.call_from_thread(status.update, Text(label))
         self.app.call_from_thread(setattr, crack_btn, "disabled", False)
 
 
 class TinyMole(App):
     TITLE = "tinymole"
-    BINDINGS = [("q", "quit", "Quit"), ("ctrl+c", "quit", "Quit")]
+    BINDINGS = [("q", "quit", "Quit")]
 
     def on_mount(self) -> None:
         self.push_screen(SplashScreen())

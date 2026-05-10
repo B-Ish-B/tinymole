@@ -223,6 +223,18 @@ Note: bcrypt requires a separate verification path and is not supported
 via `--algo`. bcrypt hashes embed a salt and cost factor and cannot be
 cracked with a simple hash comparison loop.
 
+## Terminal UI
+
+An interactive terminal UI is available as an alternative to the CLI:
+
+```bash
+make tui
+```
+
+On launch it displays the tinymole ASCII banner. Press any key to enter the main interface, which has a configuration form on the left and a live log panel on the right that tails `logs/cracker.log` as the cracker runs. The status bar at the bottom shows the result when the run completes.
+
+Requires the cracker binary to be built first (`make all`). The TUI is implemented in `src/python/tui.py` using [Textual](https://github.com/Textualize/textual).
+
 ## Makefile Targets
 
 | Target | Purpose | Flags |
@@ -233,5 +245,6 @@ cracked with a simple hash comparison loop.
 | `make test` | Build and run all Google Test unit tests | `CXXFLAGS_DEBUG` |
 | `make bench` | Build and run Google Benchmark microbenchmarks | `CXXFLAGS_RELEASE` |
 | `make crack HASH=<hex>` | Build cracker, run frequency analysis if needed, then crack | `HASH`, `ALGO`, `THREADS`, `WORDLIST` |
+| `make tui` | Launch the interactive terminal UI | n/a |
 | `make lookup HASH=<hex>` | Query weakpass API for a hash before local cracking | `HASH`, `ALGO` |
 | `make clean` | Remove all build artifacts | n/a |

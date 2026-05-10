@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: BuildStats struct returned by HashTable::load. Tracks how many
  * passwords were loaded and how many were skipped (too long, empty, contain a
  * null byte, or duplicate). Sample null-byte passwords are stored for logging.

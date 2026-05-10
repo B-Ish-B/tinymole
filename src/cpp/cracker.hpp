@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: Multithreaded cracker. Splits the candidate list round-robin
  * across threads so each thread gets an equal share of high-probability
  * candidates. Each worker hashes its partition with OpenSSL EVP and checks

@@ -1,6 +1,6 @@
 /*
  * @author Ismail Alwahsh
- * @since May 10, 2026
+ * @since May 7, 2026
  * @description: Tiny pointer encoding used by the hash table slots. Packs a
  * 27-bit pool byte offset and a 5-bit password length into a single uint32,
  * keeping each hash table slot at 24 bytes instead of 32. PasswordPool stores

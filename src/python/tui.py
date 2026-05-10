@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
-# @author Ish
-# @since May 2026
-# TUI for tinymole. Prints the ASCII splash directly to the raw terminal
-# (same rendering path as neofetch/fastfetch -- no framework cell gaps),
-# then launches a Textual two-panel interface: left = config form,
-# right = live log tail from logs/cracker.log.
+'''
+@author Ismail Alwahsh
+@since May 10, 2026
+@description: Terminal UI for tinymole. Renders the tinymole ASCII banner
+directly to the raw terminal on startup, then launches a Textual two-panel
+interface. Left panel is a configuration form (hash, algorithm, thread count,
+wordlist, candidates). Right panel tails logs/cracker.log live as the cracker
+runs. Result is shown in the status bar at the bottom when the run finishes.
+'''
 
 import subprocess
 import sys

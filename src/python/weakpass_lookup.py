@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
-# @author Ish
-# @since May 2026
-# Weakpass API lookup. Queries weakpass.com for a hash with no local dataset
-# required. Exits 0 and prints "cracked: <password>" on hit; exits 1 on miss.
-# Uses a local JSON cache so repeated lookups during benchmarking don't burn
-# API requests.
+'''
+@author Ismail Alwahsh
+@since May 10, 2026
+@description: Weakpass API lookup utility. Queries the Weakpass REST API for a
+given hash and prints the plaintext password if found. No local wordlist needed.
+Results are cached in data/weakpass_cache.json so the same hash is never looked
+up twice. Exits 0 with "cracked: <password>" on a hit, exits 1 on a miss.
+Intended to run before local cracking as a fast first check.
+'''
 
 import argparse
 import json

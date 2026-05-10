@@ -10,24 +10,18 @@ import threading
 import time
 from pathlib import Path
 
+import pyfiglet
 from rich.text import Text
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import ScrollableContainer, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Input, Label, Log, Select, Static
+from textual.widgets import Button, Input, Label, Log, Select, Static
 
 LOG_PATH = Path("logs/cracker.log")
 
-# Rendered with figlet standard font. Passed as rich.Text to bypass markup parsing.
-BANNER = (
-    " _   _                           _      \n"
-    "| |_(_)_ __  _   _ _ __ ___  ___| | ___ \n"
-    "| __| | '_ \\| | | | '_ ` _ \\/ _ \\ |/ _ \\\n"
-    "| |_| | | | | |_| | | | | | |  __/ |  __/\n"
-    " \\__|_|_| |_|\\__, |_| |_| |_|\\___|_|\\___|\n"
-    "             |___/                        "
-)
+# banner3 uses only '#' characters — no gaps in any terminal font.
+BANNER = pyfiglet.figlet_format("tinymole", font="banner3").rstrip()
 
 
 class SplashScreen(Screen):

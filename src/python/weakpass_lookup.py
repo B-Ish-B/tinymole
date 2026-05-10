@@ -3,11 +3,12 @@
 '''
 @author Ismail Alwahsh
 @since May 9, 2026
-@description: Online hash lookup utility. Queries Weakpass, hashes.com, and
-md5decrypt.net in sequence and returns the plaintext password from whichever
-service finds it first. Results are cached in data/weakpass_cache.json so the
-same hash is never queried twice. Exits 0 with "cracked: <password> (via <service>)"
-on a hit, exits 1 on a miss. Supports MD5, SHA-1, and SHA-256.
+@description: Online hash lookup utility. Queries Weakpass and hashes.com in
+sequence and returns the plaintext password from whichever service finds it
+first. Both are free with no API key required. Results are cached in
+data/weakpass_cache.json so the same hash is never queried twice. Exits 0
+with "cracked: <password> (via <service>)" on a hit, exits 1 on a miss.
+Supports MD5, SHA-1, and SHA-256.
 '''
 
 import argparse
@@ -62,25 +63,6 @@ def _try_hashes_com(client: httpx.Client, hash_hex: str) -> str | None:
     return None
 
 
-def _try_md5decrypt(client: httpx.Client, hash_hex: str, algo: str) -> str | None:
-    # md5decrypt.net only supports MD5 and a few others
-    if algo not in ("md5", "sha1", "sha256"):
-        return None
-    try:
-        r = client.get(
-            "https://md5decrypt.net/Api/api.php",
-            params={"hash": hash_hex, "hash_type": algo, "email": "guest", "code": "guest"},
-            timeout=10,
-        )
-        if r.status_code == 200:
-            text = r.text.strip()
-            if text and not text.upper().startswith(("ERROR", "CODE ERREUR", "INVALID")):
-                return text
-    except httpx.RequestError:
-        pass
-    return None
-
-
 def lookup(hash_hex: str, algo: str = "md5") -> tuple[str | None, str | None]:
     '''Returns (password, service_name) or (None, None) if not found.'''
     cache = _load_cache()
@@ -91,9 +73,8 @@ def lookup(hash_hex: str, algo: str = "md5") -> tuple[str | None, str | None]:
         return entry, "cache"
 
     services = [
-        ("weakpass",     lambda c: _try_weakpass(c, hash_hex)),
-        ("hashes.com",   lambda c: _try_hashes_com(c, hash_hex)),
-        ("md5decrypt",   lambda c: _try_md5decrypt(c, hash_hex, algo)),
+        ("weakpass",   lambda c: _try_weakpass(c, hash_hex)),
+        ("hashes.com", lambda c: _try_hashes_com(c, hash_hex)),
     ]
 
     with httpx.Client() as client:

@@ -272,9 +272,6 @@ class CrackerScreen(Screen):
         log_widget = self.query_one("#log-view", Log)
         crack_btn  = self.query_one("#crack-btn", Button)
 
-        def log(msg: str) -> None:
-            self.app.call_from_thread(log_widget.write_line, msg)
-
         stop_spin = threading.Event()
 
         # step 1: weakpass API check
@@ -294,12 +291,9 @@ class CrackerScreen(Screen):
 
         api_result = api_stdout.strip()
         if api_result.startswith("cracked:"):
-            log(f"weakpass: {api_result}")
             self.app.call_from_thread(self._set_status, f" {api_result}", "found")
             self.app.call_from_thread(setattr, crack_btn, "disabled", False)
             return
-
-        log("weakpass: not found")
 
         if not wordlist:
             self.app.call_from_thread(self._set_status, " not found", "not-found")

@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 
 '''
-@author Patrick Rooney 
+@author Patrick Rooney
 @since May 8, 2026
-@description: Frequency analysis script. Used as step 1 in project pipeline, with the following goals:
-
-1. Obtain candidate patterns to rank for password cracker. The most frequently appearing patterns in the rockyou dataset will be used for guessing patterns first. 
-2. Generate visualizations/plots of the most frequently occurring patterns in the rockyou dataset. The distribution of common patterns will help visualize the foundation of the algorithm and supplement analysis in the project write up. The visualization will create a bar chart of the top 20 leet substitutions (substitutions where letters are replaced by numbers or other non-alphabetical characters). 
+@description: Frequency analysis script. Reads the rockyou corpus, detects
+leet-speak substitution patterns, and produces a ranked candidate list for
+the password cracker along with substitution rule JSON and bar-chart PNGs.
 '''
 
-# util imports 
 import argparse
 import json
 import re
@@ -18,16 +16,14 @@ from collections import Counter, defaultdict
 from itertools import combinations, product
 from pathlib import Path
 
-# viz/external imports 
 import matplotlib.pyplot as plt
 
-DATA_DIR    = Path("data")
+DATA_DIR = Path("data")
 RESULTS_DIR = Path("results")
-ROCKYOU     = DATA_DIR / "rockyou.txt"
-CANDIDATES  = DATA_DIR / "candidates_ranked.txt"
-SUBS_JSON   = DATA_DIR / "substitution_rules.json"
+ROCKYOU = DATA_DIR / "rockyou.txt"
+CANDIDATES = DATA_DIR / "candidates_ranked.txt"
+SUBS_JSON = DATA_DIR / "substitution_rules.json"
 
-# Leet-variant mapping 
 LEET: dict[str, list[str]] = {
     'a': ['@', '4'],
     'e': ['3'],
@@ -40,19 +36,20 @@ LEET: dict[str, list[str]] = {
     'g': ['9'],
 }
 
-# '1' maps to 'i' before 'l' since setdefault keeps the first winner
+# '1' maps to 'i' before 'l' since setdefault keeps the first insertion
 REV_LEET: dict[str, str] = {}
 for _plain, _syms in LEET.items():
     for _s in _syms:
         REV_LEET.setdefault(_s, _plain)
 
 
-# convert password to lower and check for leet symbols 
 def normalize(pw: str) -> str:
+    # converts a password to lowercase and replaces leet symbols with their base letters
     return ''.join(REV_LEET.get(c, c) for c in pw.lower())
 
-# load the rockyou dataset (uses utf-8 encoding)
+
 def load_rockyou(path: Path, limit: int = 0) -> Counter[str]:
+    # reads rockyou.txt line by line and returns a frequency counter over all passwords
     freq: Counter[str] = Counter()
     total_read = 0
     with open(path, 'rb') as fh:
@@ -63,34 +60,35 @@ def load_rockyou(path: Path, limit: int = 0) -> Counter[str]:
             try:
                 pw = raw.decode('utf-8')
             except UnicodeDecodeError:
-                pw = raw.decode('latin-1')  # rockyou has mixed encodings
+                pw = raw.decode('latin-1')  # rockyou contains mixed encodings
             freq[pw] += 1
             total_read += 1
             if limit and total_read >= limit:
                 break
     return freq
 
-# tally how often each plain letter is subbed for a leet symbol, and create weightings 
+
 def build_sub_counters(freq: Counter[str]) -> dict[str, Counter[str]]:
+    # finds leet-speak variants in the corpus and tallies how often each substitution occurs
     sub_counters: dict[str, Counter[str]] = defaultdict(Counter)
     for pw, count in freq.items():
         base = normalize(pw)
-        # skip if no substitution happened, or the base word isn't in the corpus
+        # both the leet variant and its base form must exist in the corpus to count
         if base == pw or base not in freq or len(base) != len(pw):
             continue
         for pw_ch, base_ch in zip(pw, base):
             if pw_ch != base_ch:
-                sub_counters[base_ch][pw_ch] += count  # weight by how many users had this password
+                sub_counters[base_ch][pw_ch] += count  # weight by user count so common subs rank higher
     return sub_counters
 
-# expand base word into ranked leet variants 
+
 def generate_variants(
     word: str,
     sub_counters: dict[str, Counter[str]],
     max_subs: int = 2,
     cap: int = 64,
 ) -> list[tuple[int, str]]:
-    # find every character position that has at least one known substitution
+    # generates ranked leet variants of a base word using observed substitution frequencies
     positions = [
         (i, ch, list(sub_counters[ch].most_common()))
         for i, ch in enumerate(word.lower())
@@ -100,16 +98,15 @@ def generate_variants(
         return []
 
     results: list[tuple[int, str]] = []
-    # try applying 1 up to max_subs substitutions simultaneously
     for r in range(1, min(max_subs + 1, len(positions) + 1)):
         for subset in combinations(positions, r):
             sub_opts = [syms for _, _, syms in subset]
-            for combo in product(*sub_opts):  # all symbol combinations for this subset
+            for combo in product(*sub_opts):
                 score = 1
                 chars = list(word)
                 for (idx, _, _), (sym, cnt) in zip(subset, combo):
                     chars[idx] = sym
-                    score *= cnt  # rarer combos naturally sort lower
+                    score *= cnt  # multiplying counts means rarer combos naturally sort lower
                 results.append((score, ''.join(chars)))
 
     results.sort(key=lambda x: x[0], reverse=True)
@@ -123,31 +120,33 @@ def generate_variants(
                 break
     return deduped
 
-# Extract and count the most common non-alphabetical suffixes appended to passwords in corpus
+
 def top_suffixes(freq: Counter[str], top_n: int = 50) -> list[tuple[str, int]]:
-    suffix_re = re.compile(r'^[a-zA-Z].*?([^a-zA-Z]+)$')  # match trailing non-alpha chunk
+    # finds the most common non-alphabetical suffixes appended to passwords in the corpus
+    suffix_re = re.compile(r'^[a-zA-Z].*?([^a-zA-Z]+)$')  # trailing non-alpha chunk
     counts: Counter[str] = Counter()
     for pw, count in freq.items():
         m = suffix_re.match(pw)
         if m:
-            counts[m.group(1)] += count  # require alpha prefix so pure numbers don't pollute results
+            counts[m.group(1)] += count  # alpha prefix required so pure numbers don't pollute results
     return counts.most_common(top_n)
 
-# Render and save a bar chart of top 20 most frequent substitutions in the rockyou corpus 
+
 def plot_substitutions(
     sub_counters: dict[str, Counter[str]],
     out_path: Path,
     title: str = 'Top character substitutions observed in RockYou',
     exclude_case_subs: bool = False,
 ) -> None:
+    # renders and saves a bar chart of the top 20 most frequent character substitutions
     pairs: list[tuple[str, int]] = []
     for plain, subs in sorted(sub_counters.items()):
-        for sym, count in subs.most_common(3):  # top 3 symbols per base character
+        for sym, count in subs.most_common(3):
             if exclude_case_subs and sym == plain.upper():  # skip a->A, s->S, etc.
                 continue
-            pairs.append((f"{plain}→{sym}", count))
+            pairs.append((f"{plain}->{sym}", count))
     pairs.sort(key=lambda x: x[1], reverse=True)
-    pairs = pairs[:20]  # keep the 20 most frequent for readability
+    pairs = pairs[:20]  # cap at 20 for readability
     if not pairs:
         return
 
@@ -156,7 +155,7 @@ def plot_substitutions(
     ax.bar(range(len(labels)), counts)
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels, rotation=45, ha='right')
-    ax.set_ylabel('Occurrences in RockYou corpus')
+    ax.set_ylabel('Occurrences in corpus')
     ax.set_title(title)
     fig.tight_layout()
     fig.savefig(out_path, dpi=120)
@@ -164,10 +163,8 @@ def plot_substitutions(
     print(f"Chart saved to {out_path}")
 
 
-# entry point: load corpus --> analyze substitutions --> generate ranked candidates --> save charts and write outputs for cracker to use 
 def main() -> None:
-
-    # look for CLI args 
+    # entry point: loads rockyou, analyzes substitution patterns, and writes all outputs
     parser = argparse.ArgumentParser(
         description="Frequency analysis engine: produces ranked candidates and substitution rules."
     )
@@ -190,7 +187,6 @@ def main() -> None:
     args = parser.parse_args()
     print(f"Configuration: --limit {args.limit} --top {args.top} --output-limit {args.output_limit}", flush=True)
 
-    # load rockyou
     if not ROCKYOU.exists():
         print(
             f"error: {ROCKYOU} not found.\n"
@@ -210,7 +206,6 @@ def main() -> None:
     print("Analyzing substitution patterns", flush=True)
     sub_counters = build_sub_counters(freq)
 
-    # create sub rules: mapping between sub pattern and freq 
     sub_rules_json: dict[str, dict[str, int]] = {
         plain: dict(cnt.most_common())
         for plain, cnt in sorted(sub_counters.items())
@@ -220,7 +215,6 @@ def main() -> None:
         json.dump(sub_rules_json, f, indent=2)
     print(f"{len(sub_rules_json)} base chars with substitutions -> {SUBS_JSON}")
 
-    # count top subs 
     if sub_counters:
         print("Top substitutions:")
         flat = [
@@ -232,7 +226,6 @@ def main() -> None:
         for plain, sym, cnt in flat[:8]:
             print(f"{plain} -> {sym}  ({cnt:,}x)")
 
-    # suffix analysis 
     print("Analyzing suffixes", flush=True)
     suffixes = top_suffixes(freq, top_n=50)
     if suffixes:
@@ -242,10 +235,10 @@ def main() -> None:
 
     print("Building ranked candidate list", flush=True)
 
-    ranked: list[str] = [pw for pw, _ in freq.most_common()]  # raw frequency order first
+    ranked: list[str] = [pw for pw, _ in freq.most_common()]
     seen: set[str] = set(ranked)
 
-    # sum occurrences across all leet variants of the same word so "password" ranks above "p@ssword"
+    # aggregate counts under normalized base words so "password" ranks above "p@ssword"
     base_freq: Counter[str] = Counter()
     for pw, count in freq.items():
         base_freq[normalize(pw)] += count
@@ -253,7 +246,7 @@ def main() -> None:
     leet_added = 0
     for base_word, _ in base_freq.most_common(args.top):
         for _, variant in generate_variants(base_word, sub_counters):
-            if variant not in seen:  # don't re-add passwords already in the raw list
+            if variant not in seen:
                 ranked.append(variant)
                 seen.add(variant)
                 leet_added += 1
@@ -284,7 +277,6 @@ def main() -> None:
             f.write(pw + '\n')
     print(f"Wrote {CANDIDATES}")
 
-    # Create viz 
     if sub_counters:
         print("Generating substitution charts", flush=True)
         plot_substitutions(

@@ -4,8 +4,8 @@
 @author Patrick Rooney
 @since May 10, 2026
 @description: Generates benchmark graphs from the compiled password cracker's
-result files in results/. Produces four PNGs covering lookup throughput, cache
-miss counts, thread scaling, and the 3-way cracker comparison.
+result files in results/. Produces four graphs covering lookup throughput, cache
+miss counts, thread scaling, and a 3-way cracker comparison.
 '''
 
 import csv
@@ -15,6 +15,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+# Constants 
 RESULTS_DIR = Path("results")
 
 IMPL_LABELS = {

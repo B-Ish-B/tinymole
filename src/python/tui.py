@@ -269,14 +269,22 @@ class CrackerScreen(Screen):
         ).start()
 
     def _run(self, hash_val: str, algo: str, threads: str, wordlist: str, candidates: str) -> None:
+        import os
         log_widget = self.query_one("#log-view", Log)
         crack_btn  = self.query_one("#crack-btn", Button)
+        pid = os.getpid()
+
+        def log(msg: str) -> None:
+            line = f"[{pid}] weakpass_lookup.py    LOG_INFO    weakpass    {msg}"
+            self.app.call_from_thread(log_widget.write_line, line)
 
         stop_spin = threading.Event()
 
         # step 1: weakpass API check
         spin = threading.Thread(target=self._spin, args=(stop_spin, "checking weakpass API..."), daemon=True)
         spin.start()
+
+        log(f"querying API  hash: {hash_val}  algo: {algo}")
 
         proc = subprocess.Popen(
             ["uv", "run", "src/python/weakpass_lookup.py", "--hash", hash_val, "--algo", algo],
@@ -291,9 +299,12 @@ class CrackerScreen(Screen):
 
         api_result = api_stdout.strip()
         if api_result.startswith("cracked:"):
+            log(api_result)
             self.app.call_from_thread(self._set_status, f" {api_result}", "found")
             self.app.call_from_thread(setattr, crack_btn, "disabled", False)
             return
+
+        log("not found via API")
 
         if not wordlist:
             self.app.call_from_thread(self._set_status, " not found", "not-found")

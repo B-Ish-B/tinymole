@@ -3,23 +3,22 @@
 '''
 @author Ismail Alwahsh
 @since May 9, 2026
-@description: Terminal UI for tinymole. Renders the tinymole ASCII banner
-directly to the raw terminal on startup, then launches a Textual two-panel
-interface. Left panel is a configuration form (hash, algorithm, thread count,
-wordlist, candidates). Right panel tails logs/cracker.log live as the cracker
-runs. Always checks the Weakpass API first as a fast preliminary lookup before
-starting the local cracker. A spinner in the status bar shows when a run is
-active; the bar changes color on finish to indicate found or not found.
+@description: Terminal UI for tinymole. Launches a Textual application with a
+splash screen showing the tinymole ASCII banner. Press space to enter the main
+two-panel interface. Left panel is a configuration form (hash, algorithm,
+thread count, wordlist, candidates). Right panel tails logs/cracker.log live
+as the cracker runs. Runs the local cracker first; falls back to the Weakpass
+API if no wordlist is provided or the hash is not found locally. A spinner in
+the status bar shows when a run is active; the bar changes color on finish to
+indicate found or not found.
 '''
 
 import subprocess
-import sys
 import threading
 import time
 from pathlib import Path
 
 import pyfiglet
-from rich.console import Console
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import ScrollableContainer, Vertical
@@ -32,25 +31,11 @@ _SPINNER = "|/-\\"
 
 
 def _make_banner() -> str:
-    lines = pyfiglet.figlet_format("tinymole", font="smslant").splitlines()
-    lines = [l for l in lines if l.strip() not in ("/___/", "\\___/")]
+    lines = pyfiglet.figlet_format("tinymole", font="slant").splitlines()
+    lines = [l for l in lines if l.strip() not in ("/____/", "\\____/")]
     while lines and not lines[-1].strip():
         lines.pop()
     return "\n".join(lines)
-
-
-def _show_splash() -> None:
-    console = Console()
-    banner = _make_banner()
-    console.print()
-    for line in banner.splitlines():
-        console.print(line, style="bold color(214)", justify="center", highlight=False)
-    console.print()
-    console.print("press [bold]enter[/bold] to start", justify="center")
-    try:
-        input()
-    except (EOFError, KeyboardInterrupt):
-        sys.exit(0)
 
 
 def _tab_complete(current: str) -> str:
@@ -122,6 +107,37 @@ class PathInput(Input):
             event.prevent_default()
             event.stop()
             return
+
+
+class SplashScreen(Screen):
+    BINDINGS = [("space", "start", "Start")]
+
+    CSS = """
+    SplashScreen {
+        align: center middle;
+    }
+
+    #splash-banner {
+        color: color(214);
+        text-style: bold;
+        text-align: center;
+        width: auto;
+    }
+
+    #splash-hint {
+        margin-top: 2;
+        text-align: center;
+        color: $text-muted;
+        width: auto;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Static(_make_banner(), id="splash-banner", markup=False)
+        yield Static("press [bold]space[/bold] to start", id="splash-hint")
+
+    def action_start(self) -> None:
+        self.app.switch_screen(CrackerScreen())
 
 
 class CrackerScreen(Screen):
@@ -347,7 +363,7 @@ class CrackerScreen(Screen):
                 self.app.call_from_thread(setattr, crack_btn, "disabled", False)
                 return
 
-        # step 2: online API fallback (weakpass -> hashes.com -> md5decrypt)
+        # step 2: online API fallback (weakpass)
         stop_spin2 = threading.Event()
         spin2 = threading.Thread(target=self._spin, args=(stop_spin2, "checking online APIs..."), daemon=True)
         spin2.start()
@@ -382,9 +398,8 @@ class TinyMole(App):
     BINDINGS = [("q", "quit", "Quit")]
 
     def on_mount(self) -> None:
-        self.push_screen(CrackerScreen())
+        self.push_screen(SplashScreen())
 
 
 if __name__ == "__main__":
-    _show_splash()
     TinyMole().run()

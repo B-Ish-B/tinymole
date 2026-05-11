@@ -118,7 +118,7 @@ class SplashScreen(Screen):
     }
 
     #splash-banner {
-        color: color(214);
+        color: #ffaf00;
         text-style: bold;
         text-align: center;
         width: auto;

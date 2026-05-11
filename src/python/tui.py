@@ -21,7 +21,7 @@ from pathlib import Path
 import pyfiglet
 from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import ScrollableContainer, Vertical
+from textual.containers import Horizontal, ScrollableContainer, Vertical
 from textual.events import Key
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Log, Select, Static
@@ -158,6 +158,12 @@ class SplashScreen(Screen):
 
 
 class CrackerScreen(Screen):
+    _log_lines: list
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._log_lines = []
+
     CSS = """
     CrackerScreen {
         layout: horizontal;
@@ -189,15 +195,24 @@ class CrackerScreen(Screen):
         width: 100%;
     }
 
+    #save-log-btn {
+        margin-top: 1;
+        width: 100%;
+    }
+
     #log-panel {
         width: 1fr;
         padding: 1 2;
     }
 
-    #log-header {
+    #log-header-row {
         height: 1;
-        color: $text-muted;
         margin-bottom: 1;
+    }
+
+    #log-header {
+        width: 1fr;
+        color: $text-muted;
     }
 
     #log-view {
@@ -250,9 +265,11 @@ class CrackerScreen(Screen):
                 yield Label("leave blank to use wordlist", classes="field-note")
                 yield PathInput(placeholder="data/candidates_ranked.txt", id="candidates-input")
                 yield Button("Crack", id="crack-btn", variant="primary")
+                yield Button("Save Log", id="save-log-btn", variant="default")
 
         with Vertical(id="log-panel"):
-            yield Static("log", id="log-header")
+            with Horizontal(id="log-header-row"):
+                yield Static("log", id="log-header")
             yield Log(id="log-view", auto_scroll=True)
 
         yield Static(" ready", id="status")
@@ -261,6 +278,22 @@ class CrackerScreen(Screen):
         status = self.query_one("#status", Static)
         status.update(text)
         status.set_classes(css_class)
+
+    def _write_log(self, line: str) -> None:
+        self._log_lines.append(line)
+        self.query_one("#log-view", Log).write_line(line)
+
+    @on(Button.Pressed, "#save-log-btn")
+    def save_log(self) -> None:
+        if not self._log_lines:
+            self._set_status(" nothing to save", "not-found")
+            return
+        import datetime
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        out = Path(f"logs/tui_{ts}.log")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("\n".join(self._log_lines) + "\n")
+        self._set_status(f" saved: {out}", "found")
 
     def _spin(self, stop_event: threading.Event, phase_label: str) -> None:
         status = self.query_one("#status", Static)
@@ -289,6 +322,7 @@ class CrackerScreen(Screen):
             return
 
         self.query_one("#log-view", Log).clear()
+        self._log_lines.clear()
         self._set_status(" starting...", "running")
         self.query_one("#crack-btn", Button).disabled = True
 
@@ -311,7 +345,7 @@ class CrackerScreen(Screen):
             now = datetime.datetime.now()
             ts = now.strftime("%H:%M:%S.") + f"{now.microsecond * 1000:09d}"
             line = f"{ts} [{pid}] weakpass_lookup.py    LOG_INFO    weakpass    {msg}"
-            self.app.call_from_thread(log_widget.write_line, line)
+            self.app.call_from_thread(self._write_log, line)
 
         stop_spin = threading.Event()
         crack_result = ""
@@ -343,7 +377,7 @@ class CrackerScreen(Screen):
                     try:
                         lines = LOG_PATH.read_text().splitlines()
                         for line in lines[seen:]:
-                            self.app.call_from_thread(log_widget.write_line, line)
+                            self.app.call_from_thread(self._write_log, line)
                         seen = len(lines)
                     except OSError:
                         pass
@@ -351,7 +385,7 @@ class CrackerScreen(Screen):
                 try:
                     lines = LOG_PATH.read_text().splitlines()
                     for line in lines[seen:]:
-                        self.app.call_from_thread(log_widget.write_line, line)
+                        self.app.call_from_thread(self._write_log, line)
                 except OSError:
                     pass
 

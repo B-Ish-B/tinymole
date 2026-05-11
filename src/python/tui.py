@@ -32,9 +32,7 @@ _SPINNER = "|/-\\"
 
 
 def _make_banner() -> str:
-    lines = pyfiglet.figlet_format("tinymole", font="standard").splitlines()
-    lines[1] = lines[1].replace("(_)", "| |", 1)  # i dot (_) looks like a face
-    lines = [l for l in lines if l.strip() != "|___/"]  # remove isolated y descender
+    lines = pyfiglet.figlet_format("tinymole", font="slant").splitlines()
     while lines and not lines[-1].strip():
         lines.pop()
     return "\n".join(lines)

@@ -129,11 +129,29 @@ class SplashScreen(Screen):
         color: $text-muted;
         width: auto;
     }
+
+    #splash-keys {
+        margin-top: 2;
+        text-align: center;
+        color: $text-disabled;
+        width: auto;
+    }
     """
+
+    _KEYS = (
+        ("tab",          "path autocomplete"),
+        ("ctrl+w",       "delete word left"),
+        ("ctrl+delete",  "delete word right"),
+        ("ctrl+u",       "clear field"),
+        ("ctrl+k",       "delete to end"),
+        ("q",            "quit"),
+    )
 
     def compose(self) -> ComposeResult:
         yield Static(_make_banner(), id="splash-banner", markup=False)
         yield Static("press [bold]space[/bold] to start", id="splash-hint")
+        keys_text = "  ".join(f"[bold]{k}[/bold] {desc}" for k, desc in self._KEYS)
+        yield Static(keys_text, id="splash-keys")
 
     def action_start(self) -> None:
         self.app.switch_screen(CrackerScreen())

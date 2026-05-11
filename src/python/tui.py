@@ -32,7 +32,6 @@ _SPINNER = "|/-\\"
 
 def _make_banner() -> str:
     lines = pyfiglet.figlet_format("tinymole", font="slant").splitlines()
-    lines = [l for l in lines if l.strip() not in ("/____/", "\\____/")]
     while lines and not lines[-1].strip():
         lines.pop()
     return "\n".join(lines)
@@ -125,7 +124,7 @@ class SplashScreen(Screen):
     }
 
     #splash-hint {
-        margin-top: 2;
+        margin-top: 4;
         text-align: center;
         color: $text-muted;
         width: auto;

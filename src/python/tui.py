@@ -32,7 +32,8 @@ _SPINNER = "|/-\\"
 
 
 def _make_banner() -> str:
-    lines = pyfiglet.figlet_format("tinymole", font="slant").splitlines()
+    lines = pyfiglet.figlet_format("tinymole", font="smslant").splitlines()
+    lines = [l for l in lines if l.strip() not in ("/___/", "\\___/")]
     while lines and not lines[-1].strip():
         lines.pop()
     return "\n".join(lines)

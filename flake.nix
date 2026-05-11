@@ -1,5 +1,5 @@
 {
-  description = "CSC255 Password Cracker";
+  description = "Password Cracker";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -30,7 +30,7 @@
           ] ++ linuxOnly;
 
           shellHook = ''
-            echo "CSC255 dev environment ready"
+            echo "environment ready"
           '';
         };
       }

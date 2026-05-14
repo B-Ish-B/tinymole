@@ -120,13 +120,10 @@ Raw output saved to results/perf_1m.txt (subset) and results/perf_full.txt (fina
 | naive | 18,475,385 | 14,574,396 | 5,245,410,118 | 1.334 s |
 | stdmap | 39,366,312 | 31,125,968 | 7,528,961,785 | 2.128 s |
 
-Key observations:
-- Tiny pointer has 14% fewer cache misses than naive (smaller slots, more fit in cache per probe)
-- Stdmap has 2.5x more cache misses than tiny pointer (heap allocation, scattered memory)
-- Instruction counts are nearly identical between tiny pointer and naive, confirming
-  the difference is memory access cost, not compute cost
-- These differences will be more pronounced on the full 14.3M dataset where the
-  table size exceeds L3 cache for all implementations
+Tiny pointer has 14% fewer cache misses than naive (smaller slots fit more per cache line).
+Stdmap is 2.5x worse than tiny pointer due to scattered heap allocation.
+Instruction counts between tiny pointer and naive are nearly identical -- the difference
+is memory cost, not compute. Gaps will be larger on the full 14.3M dataset.
 
 ---
 
@@ -175,15 +172,10 @@ Three runs each; median reported. Cracker uses EVP_MD_CTX reuse optimization.
 | 2 | 299.0 ms | 283.6 ms | 304.6 ms | 299.0 ms | 1.11x |
 | 4 | 237.8 ms | 293.5 ms | 224.5 ms | 237.8 ms | 1.40x |
 
-Key observations:
-- 1 to 2 threads (two physical cores): 1.11x speedup. Modest gain because the
-  48 MB table far exceeds L3 (6 MB), making lookup memory-bandwidth bound.
-  MD5 computation dominates at single thread; at 2 threads DRAM bandwidth
-  becomes the bottleneck.
-- 2 to 4 threads (adding hyperthreads): further improvement to 1.40x overall.
-  HT allows each physical core to issue memory requests from two logical
-  threads simultaneously, partially hiding DRAM latency.
-- These numbers will be more pronounced on the full 14.3M dataset.
+1 to 2 threads gives only 1.11x because the 48 MB table far exceeds L3 (6 MB) and
+the workload is memory-bandwidth bound. 2 to 4 threads (adding hyperthreads) gets
+to 1.40x overall -- HT lets each physical core overlap memory requests from two
+logical threads, hiding some DRAM latency. Expect larger gains on the full dataset.
 
 Raw output saved to results/thread_scaling_1m.txt.
 
@@ -222,19 +214,12 @@ Three runs each; median reported.
 | naive | 355.2 ms | 332.5 ms | 259.7 ms | 1.37x |
 | stdmap | 354.9 ms | 338.4 ms | 267.9 ms | 1.32x |
 
-Key observations:
-- At 1 thread, naive and stdmap are both about 6.5% slower than tiny pointer.
-  The difference is smaller than the isolated lookup benchmark (47 vs 50 vs
-  282 ns/lookup) because MD5 computation dominates each iteration; the table
-  lookup is one component, not the whole cost.
-- At 4 threads, tiny pointer maintains its lead: 9.9% faster than naive and
-  13.3% faster than stdmap. The gap widens slightly because with more
-  concurrent memory traffic the smaller slot size of tiny pointer (24 vs 32
-  bytes) fits more entries per cache line and reduces DRAM bandwidth pressure.
-- stdmap scales least well (1.32x vs 1.41x) because its heap-allocated node
-  structure produces more scattered memory accesses under concurrent load,
-  increasing effective DRAM latency per lookup.
-- The ordering is consistent across all thread counts: tinyptr < naive < stdmap.
+At 1 thread, naive and stdmap are ~6.5% slower than tiny pointer. The gap is smaller
+than the isolated lookup benchmark because MD5 computation is part of the cost, not
+just the table lookup. At 4 threads the gap widens slightly (9.9% and 13.3%) as more
+concurrent memory traffic makes the smaller slot size more valuable. stdmap scales
+worst (1.32x) due to scattered heap accesses under concurrent load. Ordering is
+consistent at every thread count: tinyptr < naive < stdmap.
 
 ---
 
@@ -242,46 +227,24 @@ Key observations:
 
 ### SIMD MD5 (AVX2 / AVX-512)
 
-**Background.** Every candidate password must be hashed before it can be
-compared against the target. The current implementation does this one password
-at a time using OpenSSL's standard EVP API, which is a scalar (non-vectorized)
-path. Modern CPUs expose SIMD (Single Instruction, Multiple Data) registers
-that can operate on many values simultaneously. For MD5 specifically, AVX2
-(256-bit registers, supported on the i3-1115G4) can hash 8 independent
-passwords in the time it would otherwise take to hash one. AVX-512 (512-bit,
-not available on this CPU) extends that to 16. This is the technique used by
-production password crackers such as hashcat, and it is the primary reason
-dedicated cracking tools are orders of magnitude faster than a naive loop.
+The current implementation hashes one password at a time via OpenSSL's EVP
+API. AVX2 can hash 8 passwords in parallel in the same time, which is how
+tools like hashcat get their speed.
 
-**Why it is not implemented here.** A program is only as fast as its slowest
-stage. The perf stat results for the tiny pointer run show 5.1 billion cycles
-against 11.6 billion instructions. When cycles exceed instructions the CPU is
-stalling, meaning it is waiting for data to arrive from memory rather than
-waiting for computation to finish. The hash table for the 1M subset is 48 MB,
-which is 8x larger than this CPU's 6 MB L3 cache. Every lookup that misses
-the cache must go to DRAM, which takes roughly 60-80 ns compared to a 4 ns
-L3 hit. Because nearly every lookup in a realistic cracking workload is a miss
-(the target password is typically found near the end of the candidate list),
-the worker spends most of its time waiting on DRAM, not computing MD5.
+Not implemented here because the workload is memory-bound, not compute-bound.
+The perf stat results show 5.1B cycles against 11.6B instructions -- when
+cycles exceed instructions the CPU is stalling on memory, not doing work. The
+48 MB hash table is 8x larger than the 6 MB L3, so almost every lookup goes
+to DRAM (~60-80 ns vs ~4 ns for L3). Making MD5 8x faster would not move the
+end-to-end time much because the lookup stall dominates.
 
-Making MD5 8x faster with AVX2 would not produce an 8x end-to-end speedup
-because the lookup stall, not the hash computation, is the dominant cost. The
-optimization would be largely hidden by the memory bottleneck.
+SIMD hashing would matter if the table fit in cache (smaller wordlist or
+bigger L3) or if the cracker generated mutations on the fly instead of
+reading from a static list.
 
-**When SIMD MD5 does matter.** The compute-to-memory balance shifts in two
-scenarios. First, if the table fits in L3 cache, lookups return in ~4 ns and
-MD5 computation becomes the bottleneck. This requires either a much smaller
-wordlist or server-class hardware with 32 MB or more of L3. Second, if the
-cracker generates candidate mutations on the fly (leetspeak substitutions,
-appended digits, capitalization variants) rather than reading from a static
-list, the hash rate directly determines throughput because there is no table
-lookup at all until a match is found.
-
-**Implementation path.** Intel's isa-l_crypto library provides a multi-buffer
-MD5 API designed for exactly this use case. The worker loop would be
-restructured to accumulate a batch of N candidates, submit the batch to the
-SIMD hasher, then scan all N digests for a match. The batch size matches the
-SIMD width: 8 for AVX2, 16 for AVX-512.
+Implementation path: Intel's isa-l_crypto library has a multi-buffer MD5 API.
+The worker would accumulate a batch of N candidates, hash them all at once,
+then scan the N digests for a match. Batch size = 8 for AVX2, 16 for AVX-512.
 
 ---
 

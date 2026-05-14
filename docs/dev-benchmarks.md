@@ -122,7 +122,7 @@ Raw output saved to results/perf_1m.txt (subset) and results/perf_full.txt (fina
 
 Tiny pointer has 14% fewer cache misses than naive (smaller slots fit more per cache line).
 Stdmap is 2.5x worse than tiny pointer due to scattered heap allocation.
-Instruction counts between tiny pointer and naive are nearly identical -- the difference
+Instruction counts between tiny pointer and naive are nearly identical, so the difference
 is memory cost, not compute. Gaps will be larger on the full 14.3M dataset.
 
 ---
@@ -174,7 +174,7 @@ Three runs each; median reported. Cracker uses EVP_MD_CTX reuse optimization.
 
 1 to 2 threads gives only 1.11x because the 48 MB table far exceeds L3 (6 MB) and
 the workload is memory-bandwidth bound. 2 to 4 threads (adding hyperthreads) gets
-to 1.40x overall -- HT lets each physical core overlap memory requests from two
+to 1.40x overall. HT lets each physical core overlap memory requests from two
 logical threads, hiding some DRAM latency. Expect larger gains on the full dataset.
 
 Raw output saved to results/thread_scaling_1m.txt.
@@ -232,7 +232,7 @@ API. AVX2 can hash 8 passwords in parallel in the same time, which is how
 tools like hashcat get their speed.
 
 Not implemented here because the workload is memory-bound, not compute-bound.
-The perf stat results show 5.1B cycles against 11.6B instructions -- when
+The perf stat results show 5.1B cycles against 11.6B instructions. When
 cycles exceed instructions the CPU is stalling on memory, not doing work. The
 48 MB hash table is 8x larger than the 6 MB L3, so almost every lookup goes
 to DRAM (~60-80 ns vs ~4 ns for L3). Making MD5 8x faster would not move the

@@ -110,7 +110,7 @@ TEST(HashTable, BuildThrowsOnZero) {
     EXPECT_THROW(table.build(0), std::invalid_argument);
 }
 
-// load() tests — logger is nullptr throughout so no Quill setup is needed
+// load() tests: logger is nullptr throughout so no Quill setup is needed
 
 TEST(HashTable, LoadBasic) {
     std::istringstream src("password\nhello\nworld\n");

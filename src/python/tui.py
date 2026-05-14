@@ -397,7 +397,7 @@ class CrackerScreen(Screen):
             spin.join()
             tail.join(timeout=1)
 
-            # parse result from log file -- more reliable than stdout pipe
+            # parse result from log file (more reliable than stdout pipe)
             crack_result = ""
             try:
                 for line in reversed(LOG_PATH.read_text().splitlines()):

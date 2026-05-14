@@ -1,5 +1,7 @@
 # tinymole
 
+> **Work in progress.** This project is still under active development and is not yet complete. Benchmarks, the write-up, and several features are still being finalized.
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![OpenSSL](https://img.shields.io/badge/crypto-OpenSSL%203.x-red?logo=openssl&logoColor=white)](https://www.openssl.org/)
 [![Nix](https://img.shields.io/badge/built%20with-Nix-5277C3?logo=nixos&logoColor=white)](flake.nix)
@@ -110,7 +112,7 @@ From this point the setup is identical to Linux. Clone the repo inside your WSL2
 
 ## Pipeline
 
-The project runs in three sequential steps. The frequency analysis runs once to produce a ranked candidate list. The cracker binary loads the wordlist into a hash table at startup, then iterates through candidates in ranked order until a match is found.
+Three steps in order. Frequency analysis runs once and produces a ranked candidate list. The cracker loads the wordlist into a hash table at startup, then iterates through candidates in ranked order until a match is found.
 
 <!-- Architecture diagram showing the three-component pipeline will be added here. -->
 
@@ -125,7 +127,7 @@ cp /usr/share/wordlists/rockyou.txt data/rockyou.txt
 gunzip -c /usr/share/wordlists/rockyou.txt.gz > data/rockyou.txt
 ```
 
-For all other systems, download the RockYou dataset from a reputable security research source and place it at `data/rockyou.txt`.
+For all other systems, download rockyou.txt and place it at `data/rockyou.txt`.
 
 ### Step 2: Run frequency analysis
 
@@ -184,7 +186,7 @@ Expected terminal output:
 cracked: password
 ```
 
-Full structured logs including table build stats, thread count, and crack timing are written to `logs/cracker.log`.
+Logs are written to `logs/cracker.log`.
 
 ## Usage
 

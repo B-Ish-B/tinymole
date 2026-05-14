@@ -7,7 +7,7 @@
 
 **Multithreaded password cracker with tiny pointer hash tables and frequency-ranked candidate generation.**
 
-Built in C++17. Uses a space-efficient hash table derived from [Bender et al. (ACM Transactions on Algorithms, 2024)](https://arxiv.org/abs/2111.12800) to pack more of the working set into cache, combined with lock-free multithreaded search and a frequency-ranked candidate list generated from RockYou. Final project for CSC 255-0C3: Objects and Algorithms, Oakton College, Spring 2026.
+Built in C++17. Uses a space-efficient hash table derived from [Bender et al. (ACM Transactions on Algorithms, 2024)](https://arxiv.org/abs/2111.12800) to pack more of the working set into cache, combined with lock-free multithreaded search and a frequency-ranked candidate list generated from RockYou.
 
 ## Results
 

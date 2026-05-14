@@ -1,4 +1,4 @@
-# CSC 255 Project Write-Up
+# tinymole: Project Write-Up
 
 ## Introduction
 
@@ -14,7 +14,7 @@ The frequency analysis pipeline processes the RockYou wordlist and computes a ra
 
 ## Tiny Pointers
 
-The hash table uses 24-byte open-addressed slots. Each slot stores a 16-byte hash digest and a 8-byte tiny pointer encoding the offset of the plaintext password within a contiguous memory pool. This avoids per-entry heap allocation and keeps the working set compact. Two baseline implementations are provided for comparison: a naive 32-byte slot table and a `std::unordered_map` wrapper.
+The hash table uses 24-byte open-addressed slots. Each slot stores a 16-byte hash digest and a 4-byte tiny pointer encoding the offset of the plaintext password within a contiguous memory pool. This avoids per-entry heap allocation and keeps the working set compact. Two baseline implementations are provided for comparison: a naive 32-byte slot table and a `std::unordered_map` wrapper.
 
 ## Multithreading
 

@@ -47,15 +47,14 @@ void HashTable::build(size_t num_entries) {
 bool HashTable::insert(const uint8_t key[16], uint32_t tiny_ptr) {
     size_t idx = index_of(key);
 
-    while (slots_[idx].occupied) {
-        if (std::memcmp(slots_[idx].key, key, 16) == 0)
+    while (slots_[idx].tiny_ptr != 0) {
+        if (std::memcmp(slots_[idx].key, key, 12) == 0)
             return false;
         idx = (idx + 1) & table_mask_;
     }
 
-    std::memcpy(slots_[idx].key, key, 16);
+    std::memcpy(slots_[idx].key, key, 12);
     slots_[idx].tiny_ptr = tiny_ptr;
-    slots_[idx].occupied = true;
     ++count_;
     return true;
 }
@@ -63,8 +62,8 @@ bool HashTable::insert(const uint8_t key[16], uint32_t tiny_ptr) {
 std::string_view HashTable::lookup(const uint8_t* query_hash, const char* pool) const {
     size_t idx = index_of(query_hash);
 
-    while (slots_[idx].occupied) {
-        if (std::memcmp(slots_[idx].key, query_hash, 16) == 0) {
+    while (slots_[idx].tiny_ptr != 0) {
+        if (std::memcmp(slots_[idx].key, query_hash, 12) == 0) {
             uint32_t offset = get_offset(slots_[idx].tiny_ptr);
             uint8_t  length = get_length(slots_[idx].tiny_ptr);
             return std::string_view(pool + offset, length);
@@ -184,6 +183,8 @@ BuildStats HashTable::load(std::istream& src, PasswordPool& pool, quill::Logger*
             HLOG_WARN(logger, "    {}", s);
     }
 
+    HLOG_INFO(logger, "  slot size:               {} bytes (key truncated to 12B, sentinel replaces occupied flag)",
+        sizeof(Slot));
     HLOG_INFO(logger, "  table capacity:          {} slots ({} MB)",
         slots_.size(),
         (slots_.size() * sizeof(Slot)) / (1024 * 1024));

@@ -37,23 +37,24 @@ void HashTableNaive::build(size_t num_entries) {
     while (pow2 < capacity)
         pow2 <<= 1;
 
-    slots_.assign(pow2, SlotNaive{});
+    SlotNaive empty{};
+    empty.offset = NAIVE_SLOT_EMPTY;
+    slots_.assign(pow2, empty);
     table_mask_ = pow2 - 1;
     count_      = 0;
 }
 
-bool HashTableNaive::insert(const uint8_t key[16], uint64_t offset) {
+bool HashTableNaive::insert(const uint8_t key[16], uint32_t offset) {
     size_t idx = index_of(key);
 
-    while (slots_[idx].occupied) {
-        if (std::memcmp(slots_[idx].key, key, 16) == 0)
+    while (slots_[idx].offset != NAIVE_SLOT_EMPTY) {
+        if (std::memcmp(slots_[idx].key, key, 12) == 0)
             return false;
         idx = (idx + 1) & table_mask_;
     }
 
-    std::memcpy(slots_[idx].key, key, 16);
-    slots_[idx].offset   = offset;
-    slots_[idx].occupied = true;
+    std::memcpy(slots_[idx].key, key, 12);
+    slots_[idx].offset = offset;
     ++count_;
     return true;
 }
@@ -61,8 +62,8 @@ bool HashTableNaive::insert(const uint8_t key[16], uint64_t offset) {
 std::string_view HashTableNaive::lookup(const uint8_t* query_hash, const char* pool) const {
     size_t idx = index_of(query_hash);
 
-    while (slots_[idx].occupied) {
-        if (std::memcmp(slots_[idx].key, query_hash, 16) == 0)
+    while (slots_[idx].offset != NAIVE_SLOT_EMPTY) {
+        if (std::memcmp(slots_[idx].key, query_hash, 12) == 0)
             return std::string_view(pool + slots_[idx].offset);
         idx = (idx + 1) & table_mask_;
     }
@@ -122,7 +123,7 @@ BuildStats HashTableNaive::load(std::istream& src, PasswordPool& pool, quill::Lo
         if (line.empty() || line.find('\0') != std::string::npos || line.size() > TINY_PTR_MAX_LEN)
             continue;
 
-        uint64_t offset = static_cast<uint64_t>(pool.size());
+        uint32_t offset = static_cast<uint32_t>(pool.size());
         uint32_t tp = pool.add(line);
         if (tp == 0xFFFFFFFF) {
             HLOG_WARN(logger, "[naive] password pool full, stopping load early");

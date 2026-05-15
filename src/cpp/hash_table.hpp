@@ -21,13 +21,11 @@
 #include "src/cpp/tiny_ptr.hpp"
 
 struct Slot {
-    uint8_t  key[16];
-    uint32_t tiny_ptr;
-    bool     occupied;
-    uint8_t  padding[3];
+    uint8_t  key[12];    // 96-bit truncated key; collision prob ~n^2/2^96, negligible at 14M entries
+    uint32_t tiny_ptr;   // 0 = empty sentinel (encode_tiny_ptr(0,0) is never a valid password)
 };
 
-static_assert(sizeof(Slot) == 24, "Slot must be 24 bytes");
+static_assert(sizeof(Slot) == 16, "Slot must be 16 bytes");
 
 struct HashTable {
     HashTable() = default;

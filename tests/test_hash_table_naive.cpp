@@ -20,14 +20,14 @@ static void md5_of(const std::string& s, uint8_t out[16]) {
 }
 
 TEST(HashTableNaive, SlotSize) {
-    EXPECT_EQ(sizeof(SlotNaive), 32u);
+    EXPECT_EQ(sizeof(SlotNaive), 16u);
 }
 
 TEST(HashTableNaive, BuildAndLookupSingle) {
     PasswordPool    pool;
     HashTableNaive  table;
 
-    uint64_t offset = static_cast<uint64_t>(pool.size());
+    uint32_t offset = static_cast<uint32_t>(pool.size());
     pool.add("password");
 
     uint8_t hash[16];
@@ -43,7 +43,7 @@ TEST(HashTableNaive, MissReturnsEmpty) {
     PasswordPool   pool;
     HashTableNaive table;
 
-    uint64_t offset = static_cast<uint64_t>(pool.size());
+    uint32_t offset = static_cast<uint32_t>(pool.size());
     pool.add("hello");
 
     uint8_t hash_hello[16], hash_other[16];
@@ -60,7 +60,7 @@ TEST(HashTableNaive, DuplicateInsertReturnsFalse) {
     PasswordPool   pool;
     HashTableNaive table;
 
-    uint64_t offset = static_cast<uint64_t>(pool.size());
+    uint32_t offset = static_cast<uint32_t>(pool.size());
     pool.add("dup");
 
     uint8_t hash[16];

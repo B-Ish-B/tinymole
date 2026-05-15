@@ -19,25 +19,26 @@
 #include "src/cpp/build_stats.hpp"
 #include "src/cpp/tiny_ptr.hpp"
 
-// Open-addressed hash table using full 8-byte pool offsets.
-// Slot layout: 16-byte MD5 key + 8-byte offset + 1-byte occupied + 7-byte padding = 32 bytes.
+// Open-addressed hash table using full pool offsets.
+// Slot layout: 12-byte truncated key + 4-byte offset = 16 bytes.
+// uint32_t offset is sufficient since pool is bounded at 128 MB.
+// 0xFFFFFFFF is the empty sentinel (offset can never be 4 GB).
 // Length is derived at lookup from the null terminator in the pool.
-// Used as a baseline to isolate the contribution of pointer compression.
+
+static constexpr uint32_t NAIVE_SLOT_EMPTY = 0xFFFFFFFFu;
 
 struct SlotNaive {
-    uint8_t  key[16];
-    uint64_t offset;
-    bool     occupied;
-    uint8_t  padding[7];
+    uint8_t  key[12];   // 96-bit truncated key; same negligible collision rate as HashTable
+    uint32_t offset;    // byte offset into pool; NAIVE_SLOT_EMPTY when unoccupied
 };
 
-static_assert(sizeof(SlotNaive) == 32, "SlotNaive must be 32 bytes");
+static_assert(sizeof(SlotNaive) == 16, "SlotNaive must be 16 bytes");
 
 struct HashTableNaive {
     HashTableNaive() = default;
 
     void build(size_t num_entries);
-    bool insert(const uint8_t key[16], uint64_t offset);
+    bool insert(const uint8_t key[16], uint32_t offset);
     std::string_view lookup(const uint8_t* query_hash, const char* pool) const;
     BuildStats load(std::istream& src, PasswordPool& pool, quill::Logger* logger = nullptr);
 

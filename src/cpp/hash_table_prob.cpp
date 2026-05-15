@@ -58,10 +58,11 @@ size_t HashTableProb::h2(const uint8_t* key) const {
 }
 
 // h3: maps the MD5 key to a secondary pool bucket (second two-choice candidate).
-// Uses bytes 8-15 so it is independent of h2.
+// Uses bytes 4-11 (overlapping h2 but with a different mixing constant) so that
+// all three functions stay within the 12 bytes stored in the truncated key slot.
 size_t HashTableProb::h3(const uint8_t* key) const {
     uint64_t v;
-    std::memcpy(&v, key + 8, 8);
+    std::memcpy(&v, key + 4, 8);
     v ^= v >> 33;
     v *= 0x6c62272e07bb0142ULL;
     v ^= v >> 33;
@@ -82,7 +83,9 @@ void HashTableProb::build_ht(size_t num_entries) {
     while (pow2 < capacity)
         pow2 <<= 1;
 
-    slots_.assign(pow2, ProbSlot{});
+    ProbSlot empty{};
+    empty.tiny_ptr = PROB_TP_EMPTY;
+    slots_.assign(pow2, empty);
     table_mask_ = pow2 - 1;
     count_      = 0;
 }
@@ -208,10 +211,9 @@ bool HashTableProb::insert(const uint8_t* key16, std::string_view pw) {
         return false;  // pool exhausted (should not happen with correct sizing)
 
     size_t idx = ht_index(key16);
-    while (slots_[idx].occupied) {
-        if (std::memcmp(slots_[idx].key, key16, 16) == 0) {
-            // Duplicate: free the pool slot we just wrote.
-            // Recompute the slot to undo the allocation.
+    while (slots_[idx].tiny_ptr != PROB_TP_EMPTY) {
+        if (std::memcmp(slots_[idx].key, key16, 12) == 0) {
+            // Duplicate: undo the pool allocation we just made.
             if (!(tp & PROB_TP_SECONDARY)) {
                 size_t bucket = h1(key16);
                 uint8_t j     = tp & 0x0Fu;
@@ -226,9 +228,8 @@ bool HashTableProb::insert(const uint8_t* key16, std::string_view pw) {
         idx = (idx + 1) & table_mask_;
     }
 
-    std::memcpy(slots_[idx].key, key16, 16);
+    std::memcpy(slots_[idx].key, key16, 12);
     slots_[idx].tiny_ptr = tp;
-    slots_[idx].occupied = 1;
     ++count_;
     return true;
 }
@@ -236,8 +237,8 @@ bool HashTableProb::insert(const uint8_t* key16, std::string_view pw) {
 std::string_view HashTableProb::lookup(const uint8_t* query_hash) const {
     size_t idx = ht_index(query_hash);
 
-    while (slots_[idx].occupied) {
-        if (std::memcmp(slots_[idx].key, query_hash, 16) == 0) {
+    while (slots_[idx].tiny_ptr != PROB_TP_EMPTY) {
+        if (std::memcmp(slots_[idx].key, query_hash, 12) == 0) {
             // Found: dereference using both the key and the tiny pointer.
             return pool_get(slots_[idx].key, slots_[idx].tiny_ptr);
         }
@@ -328,8 +329,8 @@ BuildStats HashTableProb::load(std::istream& src, quill::Logger* logger) {
             // Distinguish by checking if the key is already in the HT.
             size_t idx = ht_index(hash);
             bool is_dup = false;
-            while (slots_[idx].occupied) {
-                if (std::memcmp(slots_[idx].key, hash, 16) == 0) {
+            while (slots_[idx].tiny_ptr != PROB_TP_EMPTY) {
+                if (std::memcmp(slots_[idx].key, hash, 12) == 0) {
                     is_dup = true;
                     break;
                 }
@@ -367,7 +368,7 @@ BuildStats HashTableProb::load(std::istream& src, quill::Logger* logger) {
     if (pool_full_count > 0)
         HLOG_WARN(logger, "  pool allocation failures (both buckets full): {}", pool_full_count);
 
-    HLOG_INFO(logger, "  HT slot size:            {} bytes", sizeof(ProbSlot));
+    HLOG_INFO(logger, "  HT slot size:            {} bytes (key truncated to 12B, sentinel replaces occupied flag)", sizeof(ProbSlot));
     HLOG_INFO(logger, "  pool slot size:          {} bytes (fixed)", PROB_POOL_SLOT_SIZE);
     HLOG_INFO(logger, "  HT capacity:             {} slots ({} MB)",
         slots_.size(),

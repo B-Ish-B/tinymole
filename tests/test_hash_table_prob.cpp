@@ -164,8 +164,8 @@ TEST(HashTableProb, LargeInsertAndLookup) {
 // Slot size check
 // ---------------------------------------------------------------------------
 
-TEST(HashTableProb, SlotIs20Bytes) {
-    EXPECT_EQ(sizeof(ProbSlot), 20u);
+TEST(HashTableProb, SlotIs16Bytes) {
+    EXPECT_EQ(sizeof(ProbSlot), 16u);
 }
 
 TEST(HashTableProb, PoolSlotIs32Bytes) {

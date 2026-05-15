@@ -30,7 +30,7 @@
  *   bit 4 = 1: bucket = h2(key) or h3(key) (bit 5) in secondary section.
  *   Password = pool[ slot_absolute_index * POOL_SLOT_SIZE ].
  *
- * Hash table slot: 20 bytes (vs 24 bytes for the bit-packing implementation).
+ * Hash table slot: 16 bytes (same as bit-packing after key truncation and sentinel removal).
  */
 
 #pragma once
@@ -56,13 +56,12 @@ static constexpr uint8_t PROB_TP_H3        = (1u << 5);
 static constexpr uint8_t PROB_TP_EMPTY     = 0xFF;  // sentinel for unoccupied HT slot
 
 struct ProbSlot {
-    uint8_t key[16];   // MD5 digest of the plaintext password
-    uint8_t tiny_ptr;  // 6-bit probabilistic pointer (see layout above)
-    uint8_t occupied;
-    uint8_t padding[2];
+    uint8_t key[12];    // 96-bit truncated key; same negligible collision rate as HashTable
+    uint8_t tiny_ptr;   // 6-bit probabilistic pointer; PROB_TP_EMPTY (0xFF) when unoccupied
+    uint8_t padding[3]; // pad to 16 bytes for 4 slots per 64B cache line
 };
 
-static_assert(sizeof(ProbSlot) == 20, "ProbSlot must be 20 bytes");
+static_assert(sizeof(ProbSlot) == 16, "ProbSlot must be 16 bytes");
 
 struct HashTableProb {
     HashTableProb() = default;

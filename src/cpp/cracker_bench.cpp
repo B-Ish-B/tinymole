@@ -20,6 +20,7 @@
 #include "src/cpp/hash_table.hpp"
 #include "src/cpp/hash_table_naive.hpp"
 #include "src/cpp/hash_table_stdmap.hpp"
+#include "src/cpp/hash_table_prob.hpp"
 #include "src/cpp/cracker.hpp"
 
 static std::vector<std::string> load_lines(const std::string& path) {
@@ -48,7 +49,7 @@ static bool hex_to_bytes(const std::string& hex, std::vector<uint8_t>& out) {
 
 int main(int argc, char* argv[]) {
     std::string impl     = "tinyptr";
-    std::string wordlist = "data/rockyou_1m.txt";
+    std::string wordlist = "data/rockyou.txt";
     std::string hash_hex;
     int         threads  = 4;
 
@@ -65,7 +66,7 @@ int main(int argc, char* argv[]) {
 
     if (hash_hex.empty()) {
         std::fprintf(stderr,
-            "usage: %s --hash <hex> [--impl tinyptr|naive|stdmap] "
+            "usage: %s --hash <hex> [--impl tinyptr|naive|stdmap|prob] "
             "[--threads n] [--wordlist path]\n", argv[0]);
         return 1;
     }
@@ -111,8 +112,18 @@ int main(int argc, char* argv[]) {
         crack_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - t0).count();
 
+    } else if (impl == "prob") {
+        PasswordPool  pool;   // unused by HashTableProb; passed to crack() for template compat
+        HashTableProb table;
+        std::ifstream f(wordlist);
+        table.load(f);
+        auto t0 = std::chrono::steady_clock::now();
+        result   = crack(candidates, table, pool, target.data(), threads);
+        crack_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t0).count();
+
     } else {
-        std::fprintf(stderr, "error: unknown impl '%s' (use tinyptr, naive, or stdmap)\n",
+        std::fprintf(stderr, "error: unknown impl '%s' (use tinyptr, naive, stdmap, or prob)\n",
             impl.c_str());
         return 1;
     }

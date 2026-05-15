@@ -1,9 +1,9 @@
 /*
  * @author Ismail Alwahsh
- * @since May 7, 2026
- * @description: Standalone perf runner for the std::unordered_map hash table.
- * Same workload as perf_tinyptr and perf_naive. Provides the third data point
- * for the cache miss comparison across all three implementations.
+ * @since May 15, 2026
+ * Standalone perf runner for the probabilistic tiny pointer hash table.
+ * Same workload as perf_tinyptr, perf_naive, and perf_stdmap. Use with
+ * perf stat to collect cache miss counts for the fourth data point.
  */
 
 #include <openssl/evp.h>
@@ -13,14 +13,13 @@
 #include <array>
 #include <cstdio>
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table_stdmap.hpp"
+#include "src/cpp/hash_table_prob.hpp"
 
 static constexpr size_t N_QUERIES  = 2000000;
 static const char*      WORDLIST   = "data/rockyou.txt";
 
 int main() {
-    HashTableStdMap table;
+    HashTableProb table;
 
     {
         std::ifstream f(WORDLIST);
@@ -43,6 +42,6 @@ int main() {
         sink += r.size();
     }
 
-    std::printf("stdmap lookups done (sink=%zu)\n", (size_t)sink);
+    std::printf("prob lookups done (sink=%zu)\n", (size_t)sink);
     return 0;
 }

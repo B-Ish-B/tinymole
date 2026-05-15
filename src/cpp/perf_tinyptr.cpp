@@ -17,7 +17,7 @@
 #include "src/cpp/hash_table.hpp"
 
 static constexpr size_t N_QUERIES  = 2000000;
-static const char*      WORDLIST   = "data/rockyou_1m.txt";
+static const char*      WORDLIST   = "data/rockyou.txt";
 
 int main() {
     PasswordPool pool;

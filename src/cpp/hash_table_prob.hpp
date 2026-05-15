@@ -73,6 +73,12 @@ struct HashTableProb {
     // Key-dependent dereference: the query hash is used to locate the pool bucket.
     std::string_view lookup(const uint8_t* query_hash) const;
 
+    // Compatibility overload for the cracker template, which passes pool.base()
+    // as a second argument. The pool parameter is unused here.
+    std::string_view lookup(const uint8_t* query_hash, const char*) const {
+        return lookup(query_hash);
+    }
+
     size_t capacity()    const { return slots_.size(); }
     size_t entry_count() const { return count_; }
 

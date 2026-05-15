@@ -32,7 +32,7 @@
 // ---------------------------------------------------------------------------
 
 static constexpr size_t N_QUERIES = 1000000;
-static const char* WORDLIST_PATH  = "data/rockyou_1m.txt";
+static const char* WORDLIST_PATH  = "data/rockyou.txt";
 
 struct BenchState {
     PasswordPool    pool;

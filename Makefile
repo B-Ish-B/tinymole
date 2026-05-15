@@ -55,7 +55,7 @@ build/test_cracker: tests/test_cracker.cpp src/cpp/cracker.cpp src/cpp/hash_tabl
 CRACKER_SRCS      = src/cpp/main.cpp src/cpp/cracker.cpp src/cpp/hash_table.cpp
 CRACKER_BENCH_SRCS = src/cpp/cracker_bench.cpp src/cpp/cracker.cpp \
                      src/cpp/hash_table.cpp src/cpp/hash_table_naive.cpp \
-                     src/cpp/hash_table_stdmap.cpp
+                     src/cpp/hash_table_stdmap.cpp src/cpp/hash_table_prob.cpp
 
 build/cracker: $(CRACKER_SRCS)
 	mkdir -p build logs
@@ -73,7 +73,7 @@ build/cracker_bench: $(CRACKER_BENCH_SRCS)
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
-bench: build/bench_lookup build/perf_tinyptr build/perf_naive build/perf_stdmap
+bench: build/bench_lookup build/perf_tinyptr build/perf_naive build/perf_stdmap build/perf_prob
 	./build/bench_lookup --benchmark_format=csv > results/benchmark.csv
 	@echo "Results written to results/benchmark.csv"
 
@@ -90,6 +90,10 @@ build/perf_naive: src/cpp/perf_naive.cpp src/cpp/hash_table_naive.cpp
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
 build/perf_stdmap: src/cpp/perf_stdmap.cpp src/cpp/hash_table_stdmap.cpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
+
+build/perf_prob: src/cpp/perf_prob.cpp src/cpp/hash_table_prob.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 

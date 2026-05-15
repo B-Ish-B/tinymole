@@ -3,86 +3,65 @@
 '''
 @author Ismail Alwahsh
 @since May 9, 2026
-@description: Online hash lookup utility. Queries the Weakpass REST API and
-returns the plaintext password if found. Free, no API key required. Results
-are cached in data/weakpass_cache.json so the same hash is never queried
-twice. Exits 0 with "cracked: <password> (via weakpass)" on a hit, exits 1
-on a miss. Supports MD5, SHA-1, and SHA-256.
+@description: Merge a weakpass lookup result into the frequency-ranked
+candidate list, deduplicating against the existing candidates. Weakpass
+entries are either appended (default) or prepended based on the caller's
+choice. The merged list is written to a caller-specified output path.
 '''
 
-import argparse
-import json
-import sys
 from pathlib import Path
 
-import httpx
 
-CACHE_PATH = Path("data/weakpass_cache.json")
-
-
-def _load_cache() -> dict[str, str]:
-    if CACHE_PATH.exists():
-        try:
-            return json.loads(CACHE_PATH.read_text())
-        except (json.JSONDecodeError, OSError):
-            pass
-    return {}
-
-
-def _save_cache(cache: dict[str, str]) -> None:
-    CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CACHE_PATH.write_text(json.dumps(cache, indent=2))
-
-
-def _try_weakpass(client: httpx.Client, hash_hex: str) -> str | None:
+def _load_wordlist(path: Path) -> list[str]:
     try:
-        r = client.get(f"https://weakpass.com/api/v1/search/{hash_hex}", timeout=10)
-        if r.status_code == 200:
-            return r.json().get("pass")  # API returns "pass", not "password"
-    except httpx.RequestError:
-        pass
-    return None
+        text = path.read_text(encoding='utf-8')
+    except UnicodeDecodeError:
+        text = path.read_text(encoding='latin-1')
+    return [line.rstrip('\r\n') for line in text.splitlines() if line.strip()]
 
 
-def lookup(hash_hex: str, algo: str = "md5") -> tuple[str | None, str | None]:
-    '''Returns (password, service_name) or (None, None) if not found.'''
-    cache = _load_cache()
-    if hash_hex in cache:
-        entry = cache[hash_hex]
-        if isinstance(entry, dict):
-            return entry.get("password"), entry.get("service")
-        return entry, "cache"
+def merge_wordlists(
+    weakpass_path: Path,
+    candidates_path: Path,
+    output_path: Path,
+    prepend: bool = False,
+) -> int:
+    candidates = _load_wordlist(candidates_path)
+    weakpass   = _load_wordlist(weakpass_path)
 
-    services = [
-        ("weakpass", lambda c: _try_weakpass(c, hash_hex)),
-    ]
+    seen = set(candidates)
+    new_entries = [w for w in weakpass if w not in seen]
 
-    with httpx.Client() as client:
-        for name, fn in services:
-            password = fn(client)
-            if password:
-                cache[hash_hex] = {"password": password, "service": name}
-                _save_cache(cache)
-                return password, name
+    if prepend:
+        merged = new_entries + candidates
+    else:
+        merged = candidates + new_entries
 
-    return None, None
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text('\n'.join(merged) + '\n' if merged else '')
+
+    return len(merged)
 
 
 def main() -> None:
+    import argparse
     parser = argparse.ArgumentParser(
-        description="Query online hash lookup APIs. No local dataset required."
+        description="Merge a weakpass result into the ranked candidate list."
     )
-    parser.add_argument("--hash",  required=True, help="hex-encoded hash to look up")
-    parser.add_argument("--algo",  default="md5", help="hash algorithm (md5, sha1, sha256)")
+    parser.add_argument("--weakpass",    required=True, help="weakpass result file")
+    parser.add_argument("--candidates",  required=True, help="frequency-ranked candidate list")
+    parser.add_argument("--output",      required=True, help="output path for merged list")
+    parser.add_argument("--prepend",     action="store_true",
+                        help="place weakpass entries before candidates (default: append)")
     args = parser.parse_args()
 
-    password, service = lookup(args.hash, args.algo)
-    if password:
-        print(f"cracked: {password} (via {service})")
-        sys.exit(0)
-    else:
-        print("not found")
-        sys.exit(1)
+    total = merge_wordlists(
+        Path(args.weakpass),
+        Path(args.candidates),
+        Path(args.output),
+        prepend=args.prepend,
+    )
+    print(f"merged: {total} entries -> {args.output}")
 
 
 if __name__ == "__main__":

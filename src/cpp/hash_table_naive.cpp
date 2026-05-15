@@ -8,6 +8,7 @@
  */
 
 #include "src/cpp/hash_table_naive.hpp"
+#include "src/cpp/ht_ops.hpp"
 
 #include <chrono>
 #include <cstring>
@@ -48,7 +49,7 @@ bool HashTableNaive::insert(const uint8_t key[16], uint32_t offset) {
     size_t idx = index_of(key);
 
     while (slots_[idx].offset != NAIVE_SLOT_EMPTY) {
-        if (std::memcmp(slots_[idx].key, key, 12) == 0)
+        if (ht_key_match(&slots_[idx], key))
             return false;
         idx = (idx + 1) & table_mask_;
     }
@@ -63,9 +64,11 @@ std::string_view HashTableNaive::lookup(const uint8_t* query_hash, const char* p
     size_t idx = index_of(query_hash);
 
     while (slots_[idx].offset != NAIVE_SLOT_EMPTY) {
-        if (std::memcmp(slots_[idx].key, query_hash, 12) == 0)
+        size_t next = (idx + 1) & table_mask_;
+        __builtin_prefetch(&slots_[next], 0, 1);
+        if (ht_key_match(&slots_[idx], query_hash))
             return std::string_view(pool + slots_[idx].offset);
-        idx = (idx + 1) & table_mask_;
+        idx = next;
     }
 
     return {};
@@ -171,6 +174,11 @@ BuildStats HashTableNaive::load(std::istream& src, PasswordPool& pool, quill::Lo
     HLOG_INFO(logger, "[naive]   slot size: {} bytes", sizeof(SlotNaive));
     HLOG_INFO(logger, "[naive]   table capacity: {} slots ({} MB)",
         slots_.size(), (slots_.size() * sizeof(SlotNaive)) / (1024 * 1024));
+#ifdef __SSE2__
+    HLOG_INFO(logger, "[naive]   optimizations: SIMD key compare (SSE2), prefetch on lookup probe");
+#else
+    HLOG_INFO(logger, "[naive]   optimizations: none (SSE2 not available, using memcmp fallback)");
+#endif
 
     return stats;
 }

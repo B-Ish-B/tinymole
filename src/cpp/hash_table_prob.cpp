@@ -6,6 +6,7 @@
  */
 
 #include "src/cpp/hash_table_prob.hpp"
+#include "src/cpp/ht_ops.hpp"
 
 #include <chrono>
 #include <cstring>
@@ -212,7 +213,7 @@ bool HashTableProb::insert(const uint8_t* key16, std::string_view pw) {
 
     size_t idx = ht_index(key16);
     while (slots_[idx].tiny_ptr != PROB_TP_EMPTY) {
-        if (std::memcmp(slots_[idx].key, key16, 12) == 0) {
+        if (ht_key_match(&slots_[idx], key16)) {
             // Duplicate: undo the pool allocation we just made.
             if (!(tp & PROB_TP_SECONDARY)) {
                 size_t bucket = h1(key16);
@@ -238,11 +239,13 @@ std::string_view HashTableProb::lookup(const uint8_t* query_hash) const {
     size_t idx = ht_index(query_hash);
 
     while (slots_[idx].tiny_ptr != PROB_TP_EMPTY) {
-        if (std::memcmp(slots_[idx].key, query_hash, 12) == 0) {
+        size_t next = (idx + 1) & table_mask_;
+        __builtin_prefetch(&slots_[next], 0, 1);
+        if (ht_key_match(&slots_[idx], query_hash)) {
             // Found: dereference using both the key and the tiny pointer.
             return pool_get(slots_[idx].key, slots_[idx].tiny_ptr);
         }
-        idx = (idx + 1) & table_mask_;
+        idx = next;
     }
 
     return {};
@@ -369,6 +372,11 @@ BuildStats HashTableProb::load(std::istream& src, quill::Logger* logger) {
         HLOG_WARN(logger, "  pool allocation failures (both buckets full): {}", pool_full_count);
 
     HLOG_INFO(logger, "  HT slot size:            {} bytes (key truncated to 12B, sentinel replaces occupied flag)", sizeof(ProbSlot));
+#ifdef __SSE2__
+    HLOG_INFO(logger, "  optimizations:           SIMD key compare (SSE2), prefetch on lookup probe");
+#else
+    HLOG_INFO(logger, "  optimizations:           none (SSE2 not available, using memcmp fallback)");
+#endif
     HLOG_INFO(logger, "  pool slot size:          {} bytes (fixed)", PROB_POOL_SLOT_SIZE);
     HLOG_INFO(logger, "  HT capacity:             {} slots ({} MB)",
         slots_.size(),

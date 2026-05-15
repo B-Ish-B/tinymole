@@ -22,6 +22,9 @@
 #define HLOG_DEBUG(logger, ...) do { if (logger) { LOG_DEBUG(logger, __VA_ARGS__); } } while(0)
 
 std::string_view HashTableStdMap::lookup(const uint8_t* query_hash, const char*) const {
+    // SIMD key compare and prefetch do not apply here: the lookup delegates
+    // entirely to std::unordered_map, which manages its own bucket probing
+    // and key comparison internally.
     std::string key(reinterpret_cast<const char*>(query_hash), 16);
     auto it = map_.find(key);
     if (it == map_.end()) return {};

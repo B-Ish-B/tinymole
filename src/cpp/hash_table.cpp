@@ -7,6 +7,7 @@
  */
 
 #include "src/cpp/hash_table.hpp"
+#include "src/cpp/ht_ops.hpp"
 
 #include <chrono>
 #include <cstring>
@@ -48,7 +49,7 @@ bool HashTable::insert(const uint8_t key[16], uint32_t tiny_ptr) {
     size_t idx = index_of(key);
 
     while (slots_[idx].tiny_ptr != 0) {
-        if (std::memcmp(slots_[idx].key, key, 12) == 0)
+        if (ht_key_match(&slots_[idx], key))
             return false;
         idx = (idx + 1) & table_mask_;
     }
@@ -63,12 +64,13 @@ std::string_view HashTable::lookup(const uint8_t* query_hash, const char* pool) 
     size_t idx = index_of(query_hash);
 
     while (slots_[idx].tiny_ptr != 0) {
-        if (std::memcmp(slots_[idx].key, query_hash, 12) == 0) {
-            uint32_t offset = get_offset(slots_[idx].tiny_ptr);
-            uint8_t  length = get_length(slots_[idx].tiny_ptr);
-            return std::string_view(pool + offset, length);
+        size_t next = (idx + 1) & table_mask_;
+        __builtin_prefetch(&slots_[next], 0, 1);
+        if (ht_key_match(&slots_[idx], query_hash)) {
+            return std::string_view(pool + get_offset(slots_[idx].tiny_ptr),
+                                    get_length(slots_[idx].tiny_ptr));
         }
-        idx = (idx + 1) & table_mask_;
+        idx = next;
     }
 
     return {};
@@ -188,6 +190,11 @@ BuildStats HashTable::load(std::istream& src, PasswordPool& pool, quill::Logger*
     HLOG_INFO(logger, "  table capacity:          {} slots ({} MB)",
         slots_.size(),
         (slots_.size() * sizeof(Slot)) / (1024 * 1024));
+#ifdef __SSE2__
+    HLOG_INFO(logger, "  optimizations:           SIMD key compare (SSE2), prefetch on lookup probe");
+#else
+    HLOG_INFO(logger, "  optimizations:           none (SSE2 not available, using memcmp fallback)");
+#endif
 
     return stats;
 }

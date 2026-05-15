@@ -1,10 +1,10 @@
 /*
  * @author Ismail Alwahsh
  * @since May 7, 2026
- * @description: Naive open-addressed hash table. Uses full 8-byte pool offsets
- * instead of tiny pointers, so each slot is 32 bytes (vs 24 for HashTable).
- * Same linear probing logic and load factor. Exists only as a benchmark
- * baseline to isolate the cache impact of the larger slot size.
+ * @description: Naive open-addressed hash table. Uses a 4-byte pool offset
+ * instead of a tiny pointer, so each slot is 16 bytes: 12-byte truncated key
+ * + 4-byte offset. Same linear probing, load factor, SIMD key compare, and
+ * prefetch as HashTable. Baseline to isolate the pointer-encoding difference.
  */
 
 #pragma once

@@ -20,11 +20,12 @@ debug: build/cracker_debug
 
 tsan: build/cracker_tsan
 
-test: build/test_tiny_ptr build/test_hash_table build/test_hash_table_naive build/test_hash_table_stdmap build/test_cracker
+test: build/test_tiny_ptr build/test_hash_table build/test_hash_table_naive build/test_hash_table_stdmap build/test_hash_table_prob build/test_cracker
 	./build/test_tiny_ptr
 	./build/test_hash_table
 	./build/test_hash_table_naive
 	./build/test_hash_table_stdmap
+	./build/test_hash_table_prob
 	./build/test_cracker
 
 build/test_tiny_ptr: tests/test_tiny_ptr.cpp
@@ -40,6 +41,10 @@ build/test_hash_table_naive: tests/test_hash_table_naive.cpp src/cpp/hash_table_
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
 build/test_hash_table_stdmap: tests/test_hash_table_stdmap.cpp src/cpp/hash_table_stdmap.cpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
+
+build/test_hash_table_prob: tests/test_hash_table_prob.cpp src/cpp/hash_table_prob.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
@@ -72,7 +77,7 @@ bench: build/bench_lookup build/perf_tinyptr build/perf_naive build/perf_stdmap
 	./build/bench_lookup --benchmark_format=csv > results/benchmark.csv
 	@echo "Results written to results/benchmark.csv"
 
-build/bench_lookup: src/cpp/bench_lookup.cpp src/cpp/hash_table.cpp src/cpp/hash_table_naive.cpp src/cpp/hash_table_stdmap.cpp
+build/bench_lookup: src/cpp/bench_lookup.cpp src/cpp/hash_table.cpp src/cpp/hash_table_naive.cpp src/cpp/hash_table_stdmap.cpp src/cpp/hash_table_prob.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS) -lbenchmark -lbenchmark_main
 

@@ -20,6 +20,7 @@
 #include "src/cpp/hash_table.hpp"
 #include "src/cpp/hash_table_naive.hpp"
 #include "src/cpp/hash_table_stdmap.hpp"
+#include "src/cpp/hash_table_prob.hpp"
 
 // ---------------------------------------------------------------------------
 // Shared setup: load the wordlist once, build miss queries.
@@ -34,10 +35,11 @@ static constexpr size_t N_QUERIES = 1000000;
 static const char* WORDLIST_PATH  = "data/rockyou_1m.txt";
 
 struct BenchState {
-    PasswordPool   pool;
-    HashTable      tinyptr;
-    HashTableNaive naive;
+    PasswordPool    pool;
+    HashTable       tinyptr;
+    HashTableNaive  naive;
     HashTableStdMap stdmap;
+    HashTableProb   prob;
     std::vector<std::array<uint8_t, 16>> miss_queries;
 
     BenchState() {
@@ -56,6 +58,10 @@ struct BenchState {
         {
             std::ifstream f(WORDLIST_PATH);
             stdmap.load(f);
+        }
+        {
+            std::ifstream f(WORDLIST_PATH);
+            prob.load(f);
         }
 
         // Generate miss queries
@@ -136,8 +142,24 @@ static void BM_StdMap_Miss(benchmark::State& state) {
     state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
 }
 
+// ---------------------------------------------------------------------------
+// Benchmark: probabilistic tiny pointer table miss lookups
+// ---------------------------------------------------------------------------
+static void BM_Prob_Miss(benchmark::State& state) {
+    global_setup();
+    size_t idx = 0;
+    for (auto _ : state) {
+        const auto& q = g_bench->miss_queries[idx % N_QUERIES];
+        auto result = g_bench->prob.lookup(q.data());
+        benchmark::DoNotOptimize(result);
+        ++idx;
+    }
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+}
+
 BENCHMARK(BM_TinyPtr_Miss)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_Naive_Miss)  ->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_StdMap_Miss) ->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_Prob_Miss)   ->Unit(benchmark::kNanosecond);
 
 BENCHMARK_MAIN();

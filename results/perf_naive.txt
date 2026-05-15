@@ -1,0 +1,58 @@
+=== perf stat: naive (3 runs) ===
+--- run 1 ---
+naive lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_naive':
+
+        88,101,829      cache-misses:u                                                        
+       101,205,700      cache-references:u                                                    
+    56,173,186,762      instructions:u                                                        
+    27,650,904,427      cycles:u                                                              
+        23,605,900      branch-misses:u                                                       
+         5,235,785      dtlb-load-misses:u                                                    
+        59,805,760      l1d.replacement:u                                                     
+
+       8.053570052 seconds time elapsed
+
+       7.684512000 seconds user
+       0.308643000 seconds sys
+
+
+--- run 2 ---
+naive lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_naive':
+
+        87,544,835      cache-misses:u                                                        
+       101,271,120      cache-references:u                                                    
+    56,173,186,091      instructions:u                                                        
+    27,940,002,146      cycles:u                                                              
+        23,609,046      branch-misses:u                                                       
+         5,232,137      dtlb-load-misses:u                                                    
+        59,730,885      l1d.replacement:u                                                     
+
+       8.074351713 seconds time elapsed
+
+       7.685263000 seconds user
+       0.334111000 seconds sys
+
+
+--- run 3 ---
+naive lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_naive':
+
+        86,019,067      cache-misses:u                                                        
+        99,602,804      cache-references:u                                                    
+    56,173,185,270      instructions:u                                                        
+    28,324,836,546      cycles:u                                                              
+        23,630,635      branch-misses:u                                                       
+         5,763,798      dtlb-load-misses:u                                                    
+        59,562,123      l1d.replacement:u                                                     
+
+       7.956159606 seconds time elapsed
+
+       7.607682000 seconds user
+       0.313511000 seconds sys
+
+

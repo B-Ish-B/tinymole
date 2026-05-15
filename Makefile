@@ -12,7 +12,7 @@ ALGO     ?= md5
 THREADS  ?= 4
 WORDLIST ?= data/rockyou.txt
 
-.PHONY: all debug tsan test bench crack lookup tui clean
+.PHONY: all debug tsan test bench hyperfine latency crack lookup tui clean
 
 all: build/cracker
 
@@ -73,9 +73,28 @@ build/cracker_bench: $(CRACKER_BENCH_SRCS)
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
+# MD5 of "jimmyisno1" -- entry ~7M in rockyou, forces real crack work across all threads
+BENCH_HASH    ?= 1637ff9c1826eb09071d234ea6b5563b
+BENCH_THREADS ?= 4
+HYPERFINE     := $(shell which hyperfine 2>/dev/null || echo /nix/store/fqz9ffja5czl5zrd2bg88ik8axr2pi7i-hyperfine-1.20.0/bin/hyperfine)
+
 bench: build/bench_lookup build/perf_tinyptr build/perf_naive build/perf_stdmap build/perf_prob
-	./build/bench_lookup --benchmark_format=csv > results/benchmark.csv
+	mkdir -p results
+	./build/bench_lookup --benchmark_repetitions=5 --benchmark_format=csv > results/benchmark.csv
 	@echo "Results written to results/benchmark.csv"
+
+hyperfine: build/cracker_bench
+	mkdir -p results
+	$(HYPERFINE) \
+	  --warmup 2 \
+	  --runs 5 \
+	  --export-csv results/hyperfine.csv \
+	  --export-markdown results/hyperfine.md \
+	  "build/cracker_bench --impl tinyptr --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
+	  "build/cracker_bench --impl naive   --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
+	  "build/cracker_bench --impl stdmap  --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
+	  "build/cracker_bench --impl prob    --hash $(BENCH_HASH) --threads $(BENCH_THREADS)"
+	@echo "Results written to results/hyperfine.csv and results/hyperfine.md"
 
 build/bench_lookup: src/cpp/bench_lookup.cpp src/cpp/hash_table.cpp src/cpp/hash_table_naive.cpp src/cpp/hash_table_stdmap.cpp src/cpp/hash_table_prob.cpp
 	mkdir -p build
@@ -96,6 +115,17 @@ build/perf_stdmap: src/cpp/perf_stdmap.cpp src/cpp/hash_table_stdmap.cpp
 build/perf_prob: src/cpp/perf_prob.cpp src/cpp/hash_table_prob.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
+
+build/bench_latency: src/cpp/bench_latency.cpp src/cpp/hash_table.cpp \
+                     src/cpp/hash_table_naive.cpp src/cpp/hash_table_stdmap.cpp \
+                     src/cpp/hash_table_prob.cpp
+	mkdir -p build
+	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
+
+latency: build/bench_latency
+	mkdir -p results
+	./build/bench_latency | tee results/latency_percentiles.txt
+	@echo "Results written to results/latency_percentiles.txt"
 
 crack: build/cracker data/candidates_ranked.txt
 	@if [ -z "$(HASH)" ]; then echo "error: HASH is required. Usage: make crack HASH=<hex>"; exit 1; fi

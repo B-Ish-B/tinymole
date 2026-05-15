@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
 
     // Crack
     auto wall_start = std::chrono::steady_clock::now();
-    std::string result = crack(candidates, table, pool, target_hash.data(), num_threads, md, logger);
+    std::string result = crack(candidates, table, pool, target_hash.data(), num_threads, nullptr, md, logger);
     auto wall_end   = std::chrono::steady_clock::now();
 
     double total_ms = std::chrono::duration<double, std::milli>(wall_end - wall_start).count();

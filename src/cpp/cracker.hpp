@@ -49,7 +49,8 @@ void worker(
     const uint8_t*                  target_hash,
     const EVP_MD*                   md,
     std::atomic<bool>&              found,
-    std::string&                    result
+    std::string&                    result,
+    std::atomic<size_t>&            hashes_done
 ) {
     const int hash_len = EVP_MD_get_size(md);
     std::vector<uint8_t> hash(hash_len);
@@ -65,6 +66,8 @@ void worker(
         EVP_DigestUpdate(ctx.get(), candidate.data(), candidate.size());
         EVP_DigestFinal_ex(ctx.get(), hash.data(), &hlen);
 
+        hashes_done.fetch_add(1, std::memory_order_relaxed);
+
         if (std::memcmp(hash.data(), target_hash, hash_len) == 0) {
             auto match = table.lookup(hash.data(), pool.base());
             result = match.empty() ? candidate : std::string(match);
@@ -78,6 +81,8 @@ void worker(
 // returns the cracked plaintext, or an empty string if not found.
 // md selects the hash algorithm; defaults to MD5. target_hash must be
 // exactly EVP_MD_get_size(md) bytes.
+// crack() returns the plaintext (empty on miss). hashes_done receives the
+// actual number of hashes computed across all threads before early exit.
 template<typename Table>
 std::string crack(
     const std::vector<std::string>& candidates,
@@ -85,8 +90,9 @@ std::string crack(
     const PasswordPool&             pool,
     const uint8_t*                  target_hash,
     int                             num_threads,
-    const EVP_MD*                   md     = EVP_md5(),
-    quill::Logger*                  logger = nullptr
+    size_t*                         hashes_done_out = nullptr,
+    const EVP_MD*                   md              = EVP_md5(),
+    quill::Logger*                  logger          = nullptr
 ) {
     auto t_start = std::chrono::steady_clock::now();
 
@@ -95,7 +101,8 @@ std::string crack(
 
     auto partitions = partition_candidates(candidates, num_threads);
 
-    std::atomic<bool> found{false};
+    std::atomic<bool>   found{false};
+    std::atomic<size_t> hashes_done{0};
     std::vector<std::string> results(num_threads);
     std::vector<std::thread> threads;
     threads.reserve(num_threads);
@@ -109,10 +116,14 @@ std::string crack(
             target_hash,
             md,
             std::ref(found),
-            std::ref(results[i]));
+            std::ref(results[i]),
+            std::ref(hashes_done));
     }
 
     for (auto& t : threads) t.join();
+
+    if (hashes_done_out)
+        *hashes_done_out = hashes_done.load(std::memory_order_relaxed);
 
     auto t_end = std::chrono::steady_clock::now();
     double elapsed_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();

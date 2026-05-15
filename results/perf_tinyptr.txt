@@ -1,0 +1,58 @@
+=== perf stat: tinyptr (3 runs) ===
+--- run 1 ---
+tiny_ptr lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_tinyptr':
+
+        85,487,179      cache-misses:u                                                        
+       100,265,297      cache-references:u                                                    
+    56,046,774,245      instructions:u                                                        
+    27,193,067,643      cycles:u                                                              
+        23,922,679      branch-misses:u                                                       
+         6,190,271      dtlb-load-misses:u                                                    
+        59,362,512      l1d.replacement:u                                                     
+
+       7.531698916 seconds time elapsed
+
+       7.174703000 seconds user
+       0.309629000 seconds sys
+
+
+--- run 2 ---
+tiny_ptr lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_tinyptr':
+
+        85,544,103      cache-misses:u                                                        
+        99,962,956      cache-references:u                                                    
+    56,046,774,640      instructions:u                                                        
+    26,939,566,361      cycles:u                                                              
+        23,954,949      branch-misses:u                                                       
+         6,197,264      dtlb-load-misses:u                                                    
+        58,887,598      l1d.replacement:u                                                     
+
+       7.630893469 seconds time elapsed
+
+       7.281851000 seconds user
+       0.303383000 seconds sys
+
+
+--- run 3 ---
+tiny_ptr lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_tinyptr':
+
+        86,580,262      cache-misses:u                                                        
+       100,296,298      cache-references:u                                                    
+    56,046,773,272      instructions:u                                                        
+    27,368,062,057      cycles:u                                                              
+        23,937,905      branch-misses:u                                                       
+         6,191,665      dtlb-load-misses:u                                                    
+        58,854,800      l1d.replacement:u                                                     
+
+       7.601405959 seconds time elapsed
+
+       7.250917000 seconds user
+       0.312015000 seconds sys
+
+

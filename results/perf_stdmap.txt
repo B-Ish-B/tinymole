@@ -1,0 +1,58 @@
+=== perf stat: stdmap (3 runs) ===
+--- run 1 ---
+stdmap lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_stdmap':
+
+       236,790,447      cache-misses:u                                                        
+       282,457,164      cache-references:u                                                    
+    68,928,251,992      instructions:u                                                        
+    45,283,525,181      cycles:u                                                              
+        26,386,922      branch-misses:u                                                       
+        32,504,794      dtlb-load-misses:u                                                    
+       167,371,128      l1d.replacement:u                                                     
+
+      12.884895673 seconds time elapsed
+
+      12.124716000 seconds user
+       0.684813000 seconds sys
+
+
+--- run 2 ---
+stdmap lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_stdmap':
+
+       233,868,864      cache-misses:u                                                        
+       277,017,168      cache-references:u                                                    
+    68,928,255,403      instructions:u                                                        
+    43,766,835,380      cycles:u                                                              
+        26,428,749      branch-misses:u                                                       
+        32,465,111      dtlb-load-misses:u                                                    
+       163,974,121      l1d.replacement:u                                                     
+
+      13.611704192 seconds time elapsed
+
+      12.819999000 seconds user
+       0.717426000 seconds sys
+
+
+--- run 3 ---
+stdmap lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_stdmap':
+
+       235,881,877      cache-misses:u                                                        
+       279,373,459      cache-references:u                                                    
+    68,928,254,641      instructions:u                                                        
+    43,592,400,163      cycles:u                                                              
+        26,449,160      branch-misses:u                                                       
+        32,481,946      dtlb-load-misses:u                                                    
+       162,304,198      l1d.replacement:u                                                     
+
+      13.445841609 seconds time elapsed
+
+      12.640221000 seconds user
+       0.727694000 seconds sys
+
+

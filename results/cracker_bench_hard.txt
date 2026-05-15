@@ -1,0 +1,18 @@
+=== cracker_bench with mid-list target (entry ~7M) ===
+impl=tinyptr  threads=1 crack_ms=2192.5 mhs=  3.19 hashes=6999999 result=jimmyisno1
+impl=tinyptr  threads=2 crack_ms=1996.7 mhs=  3.67 hashes=7320971 result=jimmyisno1
+impl=tinyptr  threads=4 crack_ms=1761.5 mhs=  4.01 hashes=7068425 result=jimmyisno1
+impl=tinyptr  threads=8 crack_ms=1468.3 mhs=  3.29 hashes=4829082 result=jimmyisno1
+impl=naive    threads=1 crack_ms=2257.1 mhs=  3.10 hashes=6999999 result=jimmyisno1
+impl=naive    threads=2 crack_ms=2255.4 mhs=  3.15 hashes=7105085 result=jimmyisno1
+impl=naive    threads=4 crack_ms=2283.1 mhs=  2.80 hashes=6385823 result=jimmyisno1
+impl=naive    threads=8 crack_ms=2159.3 mhs=  3.62 hashes=7823830 result=jimmyisno1
+impl=stdmap   threads=1 crack_ms=2694.2 mhs=  2.60 hashes=6999999 result=jimmyisno1
+impl=stdmap   threads=2 crack_ms=2231.8 mhs=  3.30 hashes=7367686 result=jimmyisno1
+impl=stdmap   threads=4 crack_ms=2031.7 mhs=  3.49 hashes=7082469 result=jimmyisno1
+impl=stdmap   threads=8 crack_ms=2222.5 mhs=  3.70 hashes=8212716 result=jimmyisno1
+impl=prob     threads=1 crack_ms=2282.9 mhs=  3.07 hashes=6999999 result=jimmyisno1
+impl=prob     threads=2 crack_ms=2130.0 mhs=  3.27 hashes=6969571 result=jimmyisno1
+impl=prob     threads=4 crack_ms=1936.7 mhs=  3.57 hashes=6913444 result=jimmyisno1
+impl=prob     threads=8 crack_ms=1909.2 mhs=  3.56 hashes=6799077 result=jimmyisno1
+/bin/bash: line 12: hyperfine: command not found

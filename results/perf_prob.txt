@@ -1,0 +1,58 @@
+=== perf stat: prob (3 runs) ===
+--- run 1 ---
+prob lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_prob':
+
+       209,531,836      cache-misses:u                                                        
+       234,721,718      cache-references:u                                                    
+    57,971,328,247      instructions:u                                                        
+    32,684,592,585      cycles:u                                                              
+        38,909,128      branch-misses:u                                                       
+        22,814,144      dtlb-load-misses:u                                                    
+       144,995,432      l1d.replacement:u                                                     
+
+       9.241720827 seconds time elapsed
+
+       8.729796000 seconds user
+       0.459700000 seconds sys
+
+
+--- run 2 ---
+prob lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_prob':
+
+       206,759,604      cache-misses:u                                                        
+       231,813,384      cache-references:u                                                    
+    57,971,330,589      instructions:u                                                        
+    31,336,683,282      cycles:u                                                              
+        38,983,202      branch-misses:u                                                       
+        22,890,154      dtlb-load-misses:u                                                    
+       144,473,497      l1d.replacement:u                                                     
+
+       9.858310331 seconds time elapsed
+
+       9.349766000 seconds user
+       0.458784000 seconds sys
+
+
+--- run 3 ---
+prob lookups done (sink=0)
+
+ Performance counter stats for 'build/perf_prob':
+
+       208,562,361      cache-misses:u                                                        
+       233,550,481      cache-references:u                                                    
+    57,971,328,499      instructions:u                                                        
+    32,102,622,687      cycles:u                                                              
+        38,980,374      branch-misses:u                                                       
+        22,817,242      dtlb-load-misses:u                                                    
+       145,103,905      l1d.replacement:u                                                     
+
+       9.146527898 seconds time elapsed
+
+       8.651402000 seconds user
+       0.450757000 seconds sys
+
+

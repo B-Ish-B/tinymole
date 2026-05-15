@@ -1,0 +1,18 @@
+CPU: 3.628 GHz
+RDTSC overhead: 26 cycles (7.2 ns) -- subtracted from each sample
+Samples: 500000 warmup + 2000000 measured
+Generating 2500000 miss queries...
+Loading wordlist: data/rockyou.txt
+All tables loaded. Running latency measurements...
+
+
+impl            mean    stddev       p50       p95       p99     p99.9       max
+                (ns)      (ns)      (ns)      (ns)      (ns)      (ns)      (ns)
+--------------------------------------------------------------------------------
+tinyptr      116.321   131.757    91.513   186.334   424.488  1873.259 15793.154
+naive        114.667   122.385    93.718   191.846   417.321   767.937 40734.849
+prob         111.635    82.141    92.064   183.577   405.744   571.680 18117.914
+stdmap       425.866   735.963   335.731   868.271  5079.521  8490.309 45883.281
+
+Note: all values are miss-query latency (key not in table).
+RDTSC overhead subtracted per sample. Warmup: 500000 lookups.

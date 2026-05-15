@@ -79,7 +79,8 @@ int main(int argc, char* argv[]) {
 
     auto candidates = load_lines(wordlist);
 
-    double      crack_ms = 0.0;
+    double      crack_ms    = 0.0;
+    size_t      hashes_done = 0;
     std::string result;
 
     if (impl == "tinyptr") {
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]) {
         std::ifstream f(wordlist);
         table.load(f, pool);
         auto t0 = std::chrono::steady_clock::now();
-        result   = crack(candidates, table, pool, target.data(), threads);
+        result   = crack(candidates, table, pool, target.data(), threads, &hashes_done);
         crack_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - t0).count();
 
@@ -98,7 +99,7 @@ int main(int argc, char* argv[]) {
         std::ifstream f(wordlist);
         table.load(f, pool);
         auto t0 = std::chrono::steady_clock::now();
-        result   = crack(candidates, table, pool, target.data(), threads);
+        result   = crack(candidates, table, pool, target.data(), threads, &hashes_done);
         crack_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - t0).count();
 
@@ -108,7 +109,7 @@ int main(int argc, char* argv[]) {
         std::ifstream f(wordlist);
         table.load(f);
         auto t0 = std::chrono::steady_clock::now();
-        result   = crack(candidates, table, pool, target.data(), threads);
+        result   = crack(candidates, table, pool, target.data(), threads, &hashes_done);
         crack_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - t0).count();
 
@@ -118,7 +119,7 @@ int main(int argc, char* argv[]) {
         std::ifstream f(wordlist);
         table.load(f);
         auto t0 = std::chrono::steady_clock::now();
-        result   = crack(candidates, table, pool, target.data(), threads);
+        result   = crack(candidates, table, pool, target.data(), threads, &hashes_done);
         crack_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - t0).count();
 
@@ -128,8 +129,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::printf("impl=%-8s threads=%d crack_ms=%6.1f result=%s\n",
-        impl.c_str(), threads, crack_ms,
+    double mhs = (crack_ms > 0.0)
+        ? static_cast<double>(hashes_done) / crack_ms / 1000.0
+        : 0.0;
+
+    std::printf("impl=%-8s threads=%d crack_ms=%6.1f mhs=%6.2f hashes=%zu result=%s\n",
+        impl.c_str(), threads, crack_ms, mhs, hashes_done,
         result.empty() ? "NOT_FOUND" : result.c_str());
     return result.empty() ? 1 : 0;
 }

@@ -1,0 +1,21 @@
+Benchmark 1: build/cracker_bench --impl tinyptr --hash 1637ff9c1826eb09071d234ea6b5563b --threads 4
+  Time (mean ± σ):      9.226 s ±  0.518 s    [User: 11.896 s, System: 0.847 s]
+  Range (min … max):    8.771 s … 10.021 s    5 runs
+ 
+Benchmark 2: build/cracker_bench --impl naive   --hash 1637ff9c1826eb09071d234ea6b5563b --threads 4
+  Time (mean ± σ):     10.317 s ±  0.266 s    [User: 13.416 s, System: 0.891 s]
+  Range (min … max):    9.983 s … 10.596 s    5 runs
+ 
+Benchmark 3: build/cracker_bench --impl stdmap  --hash 1637ff9c1826eb09071d234ea6b5563b --threads 4
+  Time (mean ± σ):     17.177 s ±  0.272 s    [User: 19.965 s, System: 1.304 s]
+  Range (min … max):   16.715 s … 17.375 s    5 runs
+ 
+Benchmark 4: build/cracker_bench --impl prob    --hash 1637ff9c1826eb09071d234ea6b5563b --threads 4
+  Time (mean ± σ):     11.501 s ±  0.521 s    [User: 14.628 s, System: 1.024 s]
+  Range (min … max):   11.038 s … 12.355 s    5 runs
+ 
+Summary
+  build/cracker_bench --impl tinyptr --hash 1637ff9c1826eb09071d234ea6b5563b --threads 4 ran
+    1.12 ± 0.07 times faster than build/cracker_bench --impl naive   --hash 1637ff9c1826eb09071d234ea6b5563b --threads 4
+    1.25 ± 0.09 times faster than build/cracker_bench --impl prob    --hash 1637ff9c1826eb09071d234ea6b5563b --threads 4
+    1.86 ± 0.11 times faster than build/cracker_bench --impl stdmap  --hash 1637ff9c1826eb09071d234ea6b5563b --threads 4

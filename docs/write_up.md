@@ -160,7 +160,7 @@ The miss path is memory-bound: on a miss, all three custom implementations check
 | Naive vs. StdMap | -327.6 | < 0.001 | *** | 207.2 |
 | Prob vs. StdMap | -342.6 | < 0.001 | *** | 216.7 |
 
-See Figure 1 for a visual summary with significance brackets.
+![Figure 1: Miss-query lookup latency](../results/figures/fig1_lookup_latency.png)
 
 ### 6.2 Hit and Mixed Workloads
 
@@ -177,6 +177,8 @@ The mixed workload (95% miss, 5% hit) averages 46.2, 47.0, 51.6, and 318.8 ns fo
 | Prob | 43.8 | 33.4 | 51.6 |
 | std::unordered_map | 305.9 | 392.5 | 318.8 |
 
+![Figure 2: Lookup latency by workload](../results/figures/fig2_workload_comparison.png)
+
 ### 6.3 Tail Latency
 
 Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three custom implementations are indistinguishable (91-94 ns, elevated from the Google Benchmark throughput numbers due to RDTSC serialization overhead and a colder cache state). At p99 they remain close (405-425 ns). At p99.9 a divergence appears: TinyPtr's tail widens to 1873 ns while Naive and Prob are substantially tighter at 768 and 572 ns respectively. The TinyPtr p99.9 tail reflects occasional long probing chains in the open-addressed table; Prob's two-level scheme distributes load more evenly, keeping its tail narrower. StdMap's p99.9 latency is 8490 ns (14.8x higher than Prob's), driven by heap allocation jitter and deep bucket chains.
@@ -190,7 +192,7 @@ Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three
 | Prob | 111.6 | 82.1 | 92.1 | 183.6 | 405.7 | 571.7 | 18117.9 |
 | std::unordered_map | 425.9 | 736.0 | 335.7 | 868.3 | 5079.5 | 8490.3 | 45883.3 |
 
-See Figure 5 for the full percentile profiles and tail-latency log-scale plot.
+![Figure 5: Latency percentiles](../results/figures/fig5_latency_percentiles.png)
 
 ### 6.4 Cache Behavior
 
@@ -211,6 +213,8 @@ The IPC metric confirms that TinyPtr executes most efficiently: 2.060 instructio
 
 The dTLB miss rate for Prob (11.42 misses per lookup) is 3.7x higher than TinyPtr's (3.10), indicating that the two-level pool spans more distinct 4 KB pages than the variable-length pool, contributing to TLB pressure.
 
+![Figure 3: Cache hierarchy counters](../results/figures/fig3_cache_counters.png)
+
 ### 6.5 Thread Scaling
 
 Figure 6 shows cracker throughput in MH/s as thread count increases from 1 to 8. All implementations exhibit sub-linear scaling: TinyPtr goes from 2.88 MH/s at 1 thread to 3.61 MH/s at 4 threads (1.25x speedup) and 3.71 MH/s at 8 threads. The machine has 4 physical cores, so the 4-to-8 thread jump provides negligible gain, confirming that the workload saturates memory bandwidth before exhausting CPU capacity. Adding threads increases parallelism but also increases LLC miss rate as multiple threads compete for the shared 6 MB L3 cache.
@@ -225,6 +229,8 @@ Prob shows the highest throughput at 8 threads (4.05 MH/s mean) despite its high
 | Naive | 2.59 +/- 0.06 | 3.29 +/- 0.11 | 3.67 +/- 0.13 | 3.59 +/- 0.22 |
 | Prob | 2.95 +/- 0.27 | 3.34 +/- 0.09 | 3.70 +/- 0.06 | 4.05 +/- 0.06 |
 | std::unordered_map | 2.87 +/- 0.28 | 3.12 +/- 0.05 | 3.36 +/- 0.03 | 3.48 +/- 0.04 |
+
+![Figure 6: Cracker throughput scaling](../results/figures/fig6_thread_scaling.png)
 
 ### 6.6 End-to-End Crack Time
 
@@ -241,7 +247,7 @@ The TinyPtr lead over Naive (1.12x) primarily reflects the difference in hit-pat
 | Prob | 11.501 | 0.521 | 11.038 | 12.355 | 1.25x |
 | std::unordered_map | 17.177 | 0.272 | 16.715 | 17.375 | 1.86x |
 
-See Figure 7 for the wall-time bar chart with min/max ranges.
+![Figure 7: End-to-end wall time](../results/figures/fig7_walltime.png)
 
 ### 6.7 Memory Usage
 
@@ -257,6 +263,8 @@ Prob uses 1,193.8 MB (1.76x TinyPtr). The increase comes from two sources: the f
 | Naive | 679.6 | 1.00x |
 | Prob | 1,193.8 | 1.76x |
 | std::unordered_map | 1,912.4 | 2.81x |
+
+![Figure 8: Peak memory usage](../results/figures/fig8_memory.png)
 
 ---
 

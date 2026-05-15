@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from src.python.weakpass_lookup import _load_wordlist, merge_wordlists
+from src.python.merge_wordlists import _load_wordlist, merge_wordlists
 
 
 def _write(path: Path, lines: list[str], encoding: str = 'utf-8') -> None:

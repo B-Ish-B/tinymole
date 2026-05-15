@@ -250,3 +250,26 @@ Requires the cracker binary to be built first (`make all`). The TUI is implement
 | `make tui` | Launch the interactive terminal UI | n/a |
 | `make lookup HASH=<hex>` | Query weakpass API for a hash before local cracking | `HASH`, `ALGO` |
 | `make clean` | Remove all build artifacts | n/a |
+
+## Python Tests
+
+The Python test suites run independently of `make test` (which covers C++ only). No wordlist files are needed; all tests use small in-memory fixtures.
+
+```bash
+uv run pytest -v
+```
+
+### `tests/test_frequency_analysis.py`
+
+| Test class | What it tests |
+|---|---|
+| `TestNormalize` | Leet-to-base conversion (`p@ssw0rd` → `password`), case folding |
+| `TestBuildSubCounters` | Substitution weight tallying from a corpus `Counter` |
+| `TestGenerateVariants` | Variant generation, `cap` enforcement, `max_subs` limit |
+
+### `tests/test_merge_wordlists.py`
+
+| Test class | What it tests |
+|---|---|
+| `TestLoadWordlist` | UTF-8 loading, empty line filtering, CRLF stripping, latin-1 fallback |
+| `TestMergeWordlists` | Append and prepend ordering, deduplication, empty inputs, return value, output directory creation |

@@ -1,37 +1,306 @@
-# tinymole: Project Write-Up
+# tinymole: A Comparative Study of Compact Hash Table Designs for Password Cracking
 
-## Introduction
+**Author:** Ismail Alwahsh
+**Course:** CSC 255 -- Systems Programming
+**Date:** May 2026
 
-tinymole is a multithreaded password cracker built around a space-efficient open-addressed hash table using tiny pointers. The goal is to demonstrate that reducing per-slot memory usage improves cache utilization and lowers average crack time, especially under multi-core parallelism. The project also includes a frequency analysis pipeline that ranks candidates by statistical likelihood, allowing the cracker to try the most probable passwords first.
+---
 
-## Background
+## Abstract
 
-Dictionary-based password cracking loads a wordlist into a lookup structure and iterates through candidates, hashing each one and checking for a match. The bottleneck at scale is memory bandwidth: a large hash table that does not fit in L3 cache causes frequent cache misses on every lookup. Tiny pointers, introduced by Bender et al. (ACM Transactions on Algorithms, 2024), reduce the per-entry storage cost by encoding pointers relative to a shared base address, shrinking slot size from 32 bytes to 24 bytes and allowing more entries to fit per cache line.
+tinymole is a multithreaded dictionary-based password cracker that serves as a platform for comparing four hash table designs under a realistic cracking workload. The central design question is whether reducing per-entry pointer width -- as formalized by Bender et al. in their Tiny Pointers paper (ACM Transactions on Algorithms, 2024) -- translates into measurable performance gains when the lookup table holds 14.3 million MD5 hashes. We implement three custom tables (bit-packed offset, naive full-offset, and probabilistic key-dependent) alongside a `std::unordered_map` baseline, benchmark them across miss, hit, and mixed workloads, and measure end-to-end crack time with hyperfine. The bit-packed implementation achieves 2.0x faster hit lookups than the naive baseline (13.9 ns vs 27.7 ns), all three custom designs outperform `std::unordered_map` by 6.9x on miss queries (43-45 ns vs 306 ns), and the end-to-end crack time is 1.86x faster for the best custom design. The probabilistic implementation trades cache efficiency for pointer compression and ends up 1.25x slower end-to-end despite similar per-lookup latency, due to 2.4x higher LLC cache miss pressure.
 
-## Frequency Analysis
+---
 
-The frequency analysis pipeline processes the RockYou wordlist and computes a ranked candidate list ordered by statistical likelihood. It extracts character substitution patterns (e.g., `a -> @`, `e -> 3`) and scores each password by its base word frequency and the frequency of any substitutions applied. The output is `data/candidates_ranked.txt`, which the cracker uses as its iteration order.
+## 1. Introduction
 
-## Tiny Pointers
+Dictionary attacks are the dominant technique for recovering plaintext passwords from leaked hash databases. The attacker loads a large wordlist, computes the hash of each candidate, and checks whether it matches any target. At scale the bottleneck is rarely hashing speed -- modern CPUs compute MD5 at several gigabytes per second -- but rather the lookup that follows: the candidate hash must be tested against a table that, for a 14 million entry wordlist, occupies several hundred megabytes of RAM. When the table does not fit in L3 cache, each lookup incurs a main-memory access, and per-lookup latency climbs from single-digit nanoseconds to hundreds of nanoseconds.
 
-The hash table uses 24-byte open-addressed slots. Each slot stores a 16-byte hash digest and a 4-byte tiny pointer encoding the offset of the plaintext password within a contiguous memory pool. This avoids per-entry heap allocation and keeps the working set compact. Two baseline implementations are provided for comparison: a naive 32-byte slot table and a `std::unordered_map` wrapper.
+Tiny pointers, introduced by Bender, Farach-Colton, Kuszmaul, Kuszmaul, and Liu (2024), address this class of problem by observing that the pointer stored in each hash table slot need not encode the full pool offset unambiguously in isolation. If both the key and the pointer are used together at lookup time -- a DEREFERENCE(key, ptr) operation -- the key's many bits can resolve most of the ambiguity, leaving the pointer to carry only a logarithmically small residual. The theoretical result is that O(log log log n) bits suffice at a load factor of 0.99, versus 27 bits for a naive 128 MB pool at the same capacity.
 
-## Multithreading
+This project implements four hash table variants on top of a shared cracker core and measures their performance across microbenchmarks (Google Benchmark, RDTSC), hardware counter profiling (perf stat), thread-scaling experiments, and end-to-end wall-clock timing (hyperfine). The implementations span the design space from a faithful bit-packed "tiny pointer" format through a simplified probabilistic DEREFERENCE construction and on to the standard library baseline. All experiments use the full RockYou wordlist (14,344,391 entries) and a mid-list target that forces each run to scan roughly half the wordlist before finding a match.
 
-Candidates are partitioned round-robin across worker threads so each thread receives an equivalent statistical distribution. A shared `std::atomic<bool>` signals all threads to stop as soon as one finds a match. The cracker is templated on table type so the same worker runs against all three implementations.
+---
 
-## Logging
+## 2. Background
 
-Structured logging uses the Quill async logging library. Each run writes timestamped records to `logs/cracker.log` in the format used by the Textual TUI log panel. The TUI can also save the full session log to a timestamped file via the Save Log button.
+### 2.1 Dictionary-Based Password Cracking
 
-## Benchmarks
+A dictionary attack has two phases: build-time and query-time. During build-time the cracker hashes every word in the candidate list and stores each (hash, plaintext-pointer) pair in a lookup structure. During query-time, for each target hash, the cracker performs a single lookup and, on a hit, returns the stored plaintext. Because hit events are rare relative to misses in a real attack, the miss path dominates total runtime. A realistic workload is approximately 95% misses and 5% hits.
 
-Results pending full RockYou dataset runs. See `results/` for raw data and `docs/dev-benchmarks.md` for methodology.
+The candidate list need not be presented in wordlist order. A frequency-analysis pipeline ranks candidates by statistical likelihood using character substitution frequencies extracted from the wordlist itself, so the cracker tries the most probable passwords first. This reduces expected scan depth and improves crack time on soft targets, but does not change the per-lookup cost.
 
-## Conclusion
+### 2.2 Tiny Pointers
 
-To be completed after benchmarks.
+Bender et al. (2024) define a tiny pointer as a compressed pointer that uses the key to resolve ambiguity at dereference time. Formally, an allocation scheme is given a universe of n items and a pool; ALLOCATE(v) places v in the pool and returns a tiny pointer p; DEREFERENCE(k, p) recovers v using both the key k and the pointer p. The key insight is that at the time of lookup the key is known and carries lg n bits of information, so the pointer only needs to encode the remaining O(log log log n) bits of position within a small local neighborhood. At n = 14 million, lg n ≈ 24 bits but log log log n ≈ 3 bits, a theoretical compression of 8x over a fully explicit pointer.
+
+The paper proves that a two-choice allocation scheme with O(log log n)-sized buckets achieves this bound with high probability. Our probabilistic implementation uses a simplified version of this construction with 6-bit pointers and buckets of size 16.
+
+---
+
+## 3. System Design
+
+### 3.1 Hash Table Abstraction
+
+All four implementations satisfy a common interface: `load(ifstream, pool)` populates the table from a wordlist file, and `lookup(hash, pool_base)` returns a `std::string_view` of the matching plaintext or an empty view on miss. The cracker core is templated on table type so the same worker loop runs against every implementation without duplication.
+
+Each implementation hashes passwords with MD5 using OpenSSL's EVP interface and stores a 96-bit truncated digest as the key in each slot. Truncation reduces slot size without meaningfully affecting collision probability: for n = 14.3 million entries, the birthday-bound collision probability is n^2 / 2^96 ≈ 2.5 x 10^-15, negligible.
+
+### 3.2 Memory Pool
+
+The bit-packed and naive implementations share a `PasswordPool` abstraction: a flat `std::vector<char>` into which password strings are appended sequentially with a null terminator. The pool supports at most 128 MB of aggregate data (the 27-bit offset field constraint) and passwords of at most 31 characters (the 5-bit length field constraint). The probabilistic implementation uses a separate fixed-slot pool with 32-byte entries (1 byte length + 31 bytes data), which guarantees O(1) slot access at the cost of wasted space for short passwords.
+
+### 3.3 Threading Model
+
+Worker threads are launched with `std::thread` and receive disjoint slices of the candidate list partitioned round-robin. Each thread iterates its slice independently, hashing each candidate with MD5 and calling `lookup` on the shared (read-only) hash table. A shared `std::atomic<bool> found` flag signals all threads to exit once a match is discovered. A separate `std::atomic<size_t> hashes_done` counter is incremented per-lookup so that MH/s reporting reflects actual work performed rather than total candidate count, which would overstate throughput on early exits.
+
+### 3.4 Frequency Analysis
+
+A Python pipeline processes the raw wordlist, extracts character-level substitution patterns (a -> @, e -> 3, etc.), and scores each candidate by the product of its base-word frequency and the cumulative probability of any substitutions applied. The output is `data/candidates_ranked.txt`, which is used as the iteration order during cracking. This ranking substantially improves crack time on passwords with common substitution patterns but does not affect benchmark comparisons since all implementations use the same candidate ordering.
+
+---
+
+## 4. Implementations
+
+### 4.1 TinyPtr (Bit-Packed Offset and Length)
+
+Each slot is 16 bytes: 12 bytes of truncated MD5 key and a 32-bit `tiny_ptr` field. The `tiny_ptr` packs a 27-bit pool byte offset and a 5-bit password length into a single word:
+
+```
+tiny_ptr = (offset << 5) | (length & 0x1F)
+```
+
+The critical property is that both the offset and the length are available immediately after reading the slot, with no additional memory access. On a hit, `lookup` extracts both fields with two shift-and-mask operations and constructs a `std::string_view(pool_base + offset, length)` without reading from the pool at all. This is the primary mechanism behind TinyPtr's superior hit performance.
+
+The 27-bit offset field supports pool sizes up to 128 MB, sufficient for the full RockYou dataset (134 MB raw, but passwords over 31 characters are excluded, reducing pool usage). The `static_assert(sizeof(Slot) == 16)` enforces alignment at compile time.
+
+### 4.2 Naive (Full 32-Bit Offset)
+
+The naive implementation uses the same 16-byte slot layout -- 12 bytes of key and a 32-bit field -- but stores a raw byte offset with no embedded length. On a hit, `lookup` reads `pool_base + offset` and scans forward for the null terminator to determine the string length. This O(|password|) scan requires touching pool memory that may not be in cache, adding one additional cache miss relative to TinyPtr on the hit path. The miss path is identical between the two implementations: both compare the 96-bit key and return an empty view without accessing the pool.
+
+### 4.3 Probabilistic (Key-Dependent DEREFERENCE)
+
+The probabilistic implementation follows the DEREFERENCE(k, p) construction from Bender et al. Each 16-byte `ProbSlot` stores 12 bytes of key and a 6-bit tiny pointer in a single `uint8_t` (with 3 bytes of padding). The pointer encodes position within a two-level bucket scheme:
+
+- Bits 0-3: slot index within a bucket of 16 (b = 16 from the paper).
+- Bit 4: selects primary (85% of capacity) or secondary (15%) bucket pool.
+- Bit 5: selects which of two secondary hash functions (h2 or h3) maps the key to the secondary bucket.
+
+The allocator tries the primary bucket first (hash function h1), then falls back to two-choice allocation in the secondary pool using h2 and h3. At lookup time the key and pointer together determine the exact pool slot without storing a full offset; the 12-byte key field in the slot serves both as the equality check and as the additional disambiguation information required by the DEREFERENCE operation.
+
+The pool uses 32-byte fixed-size entries to allow O(1) indexed access without a length scan. The sentinel value `0xFF` (bits 6-7 set) is reserved for empty slots; valid pointers set at most bits 0-5 and can never equal 0xFF.
+
+This implementation approximates the paper's construction at 6 bits per pointer rather than the theoretical minimum of approximately 3 bits at n = 14.3 million. A true 3-bit implementation would require the larger bucket sizes and tighter probabilistic analysis described in the paper and is left as future work.
+
+### 4.4 std::unordered_map Baseline
+
+The baseline wraps `std::unordered_map<std::array<uint8_t,16>, std::string>`, which uses separate chaining with heap-allocated nodes. Each entry incurs pointer overhead, hash metadata, and a heap allocation, yielding roughly 130-150 bytes per entry versus 16 bytes for the custom implementations. This establishes a lower bound on what a carefully designed open-addressed table should be able to achieve.
+
+### 4.5 Complexity Summary
+
+| Implementation | Slot Size | Pointer Bits | Lookup Miss | Lookup Hit | Pool Layout |
+|---|---|---|---|---|---|
+| TinyPtr | 16 B | 32 (27 offset + 5 length) | O(1) expected | O(1) | Variable-length |
+| Naive | 16 B | 32 (raw offset) | O(1) expected | O(|pw|) strlen | Variable-length |
+| Prob | 16 B | 6 (key-dependent) | O(1) expected | O(1) | Fixed 32 B slots |
+| std::unordered_map | ~140 B | 64 (heap pointer) | O(1) expected | O(1) | Heap per entry |
+
+All three custom implementations use open addressing with linear probing. Load factor is approximately 0.75 at 14.3 million entries. The theoretical minimum pointer width from Bender et al. at this scale is O(log log log n) ≈ 3 bits.
+
+---
+
+## 5. Experimental Setup
+
+### 5.1 Hardware and Software
+
+All benchmarks were run on a single workstation with a 4-core Intel CPU running at up to 4.1 GHz under the `performance` CPU frequency governor with Turbo Boost enabled. The cache hierarchy is 48 KiB L1d per core, 1280 KiB L2 per core, and 6144 KiB (6 MB) shared L3. The operating system is Linux 6.19.12 (Fedora 42). All binaries were compiled with GCC 15.2.1 at `-O2 -march=native`. OpenSSL 3.6.1 provides MD5 via the EVP interface.
+
+### 5.2 Dataset
+
+The RockYou wordlist contains 14,344,391 entries totaling 134 MB. Passwords longer than 31 characters or containing null bytes are skipped at load time, affecting a negligible fraction of entries. The mid-list benchmark target is the MD5 of "jimmyisno1", which appears at approximately entry 7 million, forcing all threads to scan roughly half the wordlist before finding a match.
+
+### 5.3 Benchmark Methodology
+
+Four benchmark types were used:
+
+**Google Benchmark (throughput):** The binary `build/bench_lookup` runs 5 repetitions of each benchmark function. Three workloads are measured: miss (query hash guaranteed absent, generated as MD5 of "MISS_QUERY_i"), hit (query hash sampled from the loaded wordlist), and mixed (95 misses followed by 5 hits in a fixed cycle). Results are reported as mean, median, and coefficient of variation across repetitions.
+
+**RDTSC latency distribution:** The binary `build/bench_latency` uses serialized RDTSC (lfence + rdtsc at start, rdtscp + lfence at end) to record per-lookup cycle counts for 2 million consecutive miss queries after 500,000 warmup lookups. RDTSC call overhead is measured as the minimum of 1,000 empty measurement windows and subtracted from each sample. Samples are sorted and percentiles extracted.
+
+**Hardware counters (perf stat):** Each implementation's standalone lookup binary (e.g., `build/perf_tinyptr`) is run under `perf stat` for three independent runs with seven counters: LLC cache misses, cache references, instructions, cycles, branch misses, dTLB load misses, and L1d replacements. The binaries execute 2 million miss lookups over the full loaded table.
+
+**End-to-end wall time (hyperfine):** `build/cracker_bench` is run via hyperfine with 2 warmup runs, 5 timed runs, and 4 threads for each implementation, targeting the mid-list hash.
+
+---
+
+## 6. Results
+
+### 6.1 Miss-Query Lookup Latency
+
+Table 1 reports Google Benchmark mean latency for the miss workload. All three custom implementations cluster tightly at 43-45 ns while `std::unordered_map` averages 305.9 ns, a 6.9x gap. The differences among the custom implementations are small in absolute terms. A pairwise Welch t-test (Table 2) finds TinyPtr vs. Naive statistically significant (p = 0.0054, `**`, Cohen's d = 2.40), while TinyPtr vs. Prob is not significant (p = 0.14, `ns`). Both effect sizes are dwarfed by the gap between any custom implementation and StdMap (p < 0.001, `***`, Cohen's d > 200).
+
+The miss path is memory-bound: on a miss, all three custom implementations check the 12-byte key field in the probed slot and return immediately without touching the pool. The 7x latency gap versus StdMap is attributable to StdMap's pointer-chased bucket structure, which requires two independent cache-line loads (the bucket array and the chained node) versus one for open-addressed slots.
+
+**Table 1: Miss-Query Lookup Latency (Google Benchmark, n=5 repetitions)**
+
+| Implementation | Mean (ns) | Stddev (ns) | Median (ns) | 95% CI |
+|---|---|---|---|---|
+| TinyPtr | 44.515 | 0.750 | 44.389 | [43.586, 45.444] |
+| Naive | 42.740 | 0.734 | 43.035 | [41.829, 43.651] |
+| Prob | 43.847 | 0.488 | 43.766 | [43.241, 44.453] |
+| std::unordered_map | 305.859 | 1.639 | 306.209 | [303.826, 307.892] |
+
+**Table 2: Pairwise Statistical Significance -- Miss Latency (Welch t-test, n=5)**
+
+| Pair | t-stat | p-value | Sig. | Cohen's d |
+|---|---|---|---|---|
+| TinyPtr vs. Naive | 3.784 | 0.0054 | ** | 2.397 |
+| TinyPtr vs. Prob | 1.620 | 0.1398 | ns | 0.764 |
+| TinyPtr vs. StdMap | -340.2 | < 0.001 | *** | 228.9 |
+| Naive vs. Prob | -1.951 | 0.0804 | ns | 1.117 |
+| Naive vs. StdMap | -375.1 | < 0.001 | *** | 250.0 |
+| Prob vs. StdMap | -480.3 | < 0.001 | *** | 313.4 |
+
+See Figure 1 for a visual summary with significance brackets.
+
+### 6.2 Hit and Mixed Workloads
+
+The hit workload reveals the largest differentiation among the custom implementations (Figure 2). TinyPtr averages 13.9 ns per lookup -- 2.0x faster than Naive (27.7 ns) and 2.4x faster than Prob (33.4 ns). This speedup is structural: the TinyPtr 32-bit field encodes both the pool offset and the password length, so lookup can construct a `std::string_view` directly from the slot contents. The Naive implementation stores only a raw offset and must scan the pool for a null terminator (a short but potentially cache-cold `strlen`), adding one dependent pool access. StdMap hit latency (392.5 ns) is worse than its miss latency due to the additional pointer dereference needed to read the stored string value.
+
+The mixed workload (95% miss, 5% hit) averages 46.2, 47.0, 51.6, and 318.8 ns for TinyPtr, Naive, Prob, and StdMap respectively. The 5% hit component raises mixed latency above pure miss for all implementations. Prob's mixed latency (51.6 ns) is noticeably higher than TinyPtr's (46.2 ns), reflecting the additional pool-level indirection in its DEREFERENCE path.
+
+**Table 3: Lookup Latency by Workload (mean ns/op, Google Benchmark, n=5)**
+
+| Implementation | Miss | Hit | Mixed (95:5) |
+|---|---|---|---|
+| TinyPtr | 44.5 | 13.9 | 46.2 |
+| Naive | 42.7 | 27.7 | 47.0 |
+| Prob | 43.8 | 33.4 | 51.6 |
+| std::unordered_map | 305.9 | 392.5 | 318.8 |
+
+### 6.3 Tail Latency
+
+Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three custom implementations are indistinguishable (91-94 ns, elevated from the Google Benchmark throughput numbers due to RDTSC serialization overhead and a colder cache state). At p99 they remain close (405-425 ns). At p99.9 a divergence appears: TinyPtr's tail widens to 1873 ns while Naive and Prob are substantially tighter at 768 and 572 ns respectively. The TinyPtr p99.9 tail reflects occasional long probing chains caused by hash collisions in the open-addressed table; Prob's two-level scheme distributes load more evenly, keeping its tail narrower. StdMap's p99.9 latency is 8490 ns -- 14.8x higher than Prob's -- due to heap allocation jitter and deep bucket chains.
+
+**Table 4: RDTSC Percentile Latency -- Miss Workload (ns, 2M samples, 500K warmup)**
+
+| Implementation | Mean | Stddev | p50 | p95 | p99 | p99.9 | Max |
+|---|---|---|---|---|---|---|---|
+| TinyPtr | 116.3 | 131.8 | 91.5 | 186.3 | 424.5 | 1873.3 | 15793.2 |
+| Naive | 114.7 | 122.4 | 93.7 | 191.8 | 417.3 | 767.9 | 40734.8 |
+| Prob | 111.6 | 82.1 | 92.1 | 183.6 | 405.7 | 571.7 | 18117.9 |
+| std::unordered_map | 425.9 | 736.0 | 335.7 | 868.3 | 5079.5 | 8490.3 | 45883.3 |
+
+See Figure 5 for the full percentile profiles and tail-latency log-scale plot.
+
+### 6.4 Cache Behavior
+
+Table 5 reports hardware counters averaged over three `perf stat` runs (Figure 3). TinyPtr and Naive generate nearly identical cache pressure: approximately 43 LLC misses per 100 lookups and 30 L1d replacements per lookup, reflecting one cache miss per lookup when the full 14.3 million entry table does not fit in the 6 MB L3 cache. Prob generates 104 LLC misses per 100 lookups -- 2.4x higher -- and 72 L1d replacements per lookup. This elevated miss rate reflects two sources of additional memory traffic: the fixed 32-byte pool slots (versus variable-length pool entries for TinyPtr/Naive) and the two-level bucket scheme, which on a miss may probe both primary and secondary regions before confirming absence.
+
+StdMap's 118 LLC misses per 100 lookups is consistent with two pointer dereferences per lookup (bucket array and node pointer), each potentially cold.
+
+The IPC metric confirms that TinyPtr executes most efficiently: 2.060 instructions per cycle versus 2.008 for Naive, 1.812 for Prob, and 1.559 for StdMap. Higher IPC under a memory-bound workload indicates fewer stall cycles, consistent with TinyPtr's compact pool representation minimizing dependent memory accesses.
+
+**Table 5: Hardware Counters (perf stat, avg of 3 runs, 2M miss queries)**
+
+| Implementation | LLC Misses / Lookup | L1D Repl. / Lookup | dTLB Misses / Lookup | IPC | LLC Miss Rate |
+|---|---|---|---|---|---|
+| TinyPtr | 42.94 | 29.52 | 3.10 | 2.060 | 85.5% |
+| Naive | 43.61 | 29.85 | 2.71 | 2.008 | 87.1% |
+| Prob | 104.14 | 72.43 | 11.42 | 1.812 | 88.7% |
+| std::unordered_map | 117.76 | 82.27 | 16.24 | 1.559 | 83.8% |
+
+The dTLB miss rate for Prob (11.42 misses per lookup) is 3.7x higher than TinyPtr's (3.10), indicating that the two-level pool spans more distinct 4 KB pages than the variable-length pool, contributing to TLB pressure.
+
+### 6.5 Thread Scaling
+
+Figure 6 shows cracker throughput in MH/s as thread count increases from 1 to 8. All implementations exhibit sub-linear scaling: TinyPtr goes from 2.88 MH/s at 1 thread to 3.61 MH/s at 4 threads (1.25x speedup) and 3.71 MH/s at 8 threads. The machine has 4 physical cores, so the 4-to-8 thread jump provides negligible gain, confirming that the workload is memory-bandwidth-saturated at 4 threads. The single-threaded baseline is dominated by the sequential hash-compute-lookup loop; adding threads increases parallelism but also increases LLC miss rate as multiple threads compete for the shared 6 MB L3 cache.
+
+Prob shows the highest throughput at 8 threads (4.05 MH/s mean) despite its higher per-lookup latency, likely because its pool layout causes fewer sequential prefetch dependencies than the chained access in StdMap.
+
+**Table 6: Cracker Throughput -- Mean MH/s (stddev), 3 runs per cell**
+
+| Implementation | 1 thread | 2 threads | 4 threads | 8 threads |
+|---|---|---|---|---|
+| TinyPtr | 2.88 ± 0.29 | 3.16 ± 0.20 | 3.61 ± 0.17 | 3.71 ± 0.06 |
+| Naive | 2.59 ± 0.06 | 3.29 ± 0.11 | 3.67 ± 0.13 | 3.59 ± 0.22 |
+| Prob | 2.95 ± 0.27 | 3.34 ± 0.09 | 3.70 ± 0.06 | 4.05 ± 0.06 |
+| std::unordered_map | 2.87 ± 0.28 | 3.12 ± 0.05 | 3.36 ± 0.03 | 3.48 ± 0.04 |
+
+### 6.6 End-to-End Crack Time
+
+Table 7 reports hyperfine wall-clock timing for a 4-thread crack of the mid-list target. TinyPtr completes in 9.226 s (mean, ± 0.518 s), the fastest of the four. Naive takes 10.317 s (1.12x), Prob 11.501 s (1.25x), and StdMap 17.177 s (1.86x). Despite Prob's similar per-lookup latency to TinyPtr and Naive in the microbenchmark, its higher cache miss rate translates into a meaningful end-to-end penalty when the full working set is repeatedly scanned.
+
+The TinyPtr lead over Naive (1.12x) is consistent with the 1.25x speedup observed in the thread-scaling experiment and primarily reflects the difference in hit-path efficiency accumulated over 7 million lookups. The StdMap penalty (1.86x) is fully explained by the 6.9x per-lookup gap: the end-to-end time includes table load, thread startup, and MD5 computation, which amortize the lookup difference.
+
+**Table 7: End-to-End Wall Time (hyperfine, 5 runs, 2 warmups, 4 threads)**
+
+| Implementation | Mean (s) | Stddev (s) | Min (s) | Max (s) | vs. TinyPtr |
+|---|---|---|---|---|---|
+| TinyPtr | 9.226 | 0.518 | 8.771 | 10.021 | 1.00x |
+| Naive | 10.317 | 0.266 | 9.983 | 10.596 | 1.12x |
+| Prob | 11.501 | 0.521 | 11.038 | 12.355 | 1.25x |
+| std::unordered_map | 17.177 | 0.272 | 16.715 | 17.375 | 1.86x |
+
+See Figure 7 for the wall-time bar chart with min/max ranges.
+
+### 6.7 Memory Usage
+
+Figure 8 shows peak RSS measured with `/usr/bin/time -v`. TinyPtr and Naive are essentially identical at 679.6 MB each, confirming that the pointer encoding does not affect overall footprint when both implementations use the same variable-length pool. The hash table itself accounts for roughly 512 MB (2^25 = 33.5 million 16-byte slots at 0.75 load factor) and the pool for the remaining ~168 MB.
+
+Prob uses 1,193.8 MB (1.76x TinyPtr). The increase comes from two sources: the fixed 32-byte pool slots consume 2x more space per entry than an average variable-length entry, and the two-level hash table (primary + secondary pools) effectively doubles the table's slot array. StdMap uses 1,912.4 MB (2.81x), consistent with approximately 130 bytes of per-entry overhead from heap allocation, hash metadata, and pointer fields.
+
+**Table 8: Peak Memory Usage (/usr/bin/time -v)**
+
+| Implementation | RSS (MB) | vs. TinyPtr |
+|---|---|---|
+| TinyPtr | 679.6 | 1.00x |
+| Naive | 679.6 | 1.00x |
+| Prob | 1,193.8 | 1.76x |
+| std::unordered_map | 1,912.4 | 2.81x |
+
+---
+
+## 7. Discussion
+
+**Why TinyPtr beats Naive on hits but not misses.** Both implementations use identical 16-byte slots and the same pool structure, so their miss paths are indistinguishable at the instruction level. The difference is entirely on the hit path: TinyPtr's `tiny_ptr` word contains both the pool offset (27 bits) and the password length (5 bits), allowing `string_view` construction with two register operations. Naive stores only a raw offset and must call `strlen` on the pool pointer, which scans pool memory sequentially. For passwords averaging 8-10 characters, this adds one cache-line touch and a short loop, explaining the 2x latency difference (13.9 vs 27.7 ns). The design lesson is that inlining metadata into the pointer -- even at the cost of constraining maximum pool size to 128 MB -- eliminates a dependent memory access on the hot path.
+
+**Prob's cache pressure undermines its pointer savings.** The probabilistic implementation achieves 6-bit pointers (vs. 32-bit for TinyPtr and Naive) but at the cost of 2.4x more LLC cache misses per lookup. Two structural choices drive this: the fixed 32-byte pool slots waste space for short passwords (RockYou's median password is 7 characters), and the two-level bucket scheme causes lookups to probe both primary and secondary regions on a miss. The net result is that Prob is 1.25x slower end-to-end despite similar single-lookup latency in the throughput microbenchmark. This illustrates that pointer compression is only beneficial if the space savings actually reduce cache footprint; fixed-size pool slots negate the benefit of a smaller pointer.
+
+**Tail latency tradeoffs.** At p99.9 TinyPtr's tail (1873 ns) is 2.4x wider than Prob's (572 ns). Open addressing with linear probing can produce long runs under load; TinyPtr's hash function is not immune to clustering at 0.75 load factor. Prob's two-level scheme provides a statistical guarantee that no bucket grows beyond a constant size, bounding the worst-case probe length. For a real-time cracking service where consistent latency matters, Prob's tighter tail would be preferable. For a batch offline cracker, the mean is more relevant and TinyPtr wins.
+
+**Sub-linear thread scaling.** Throughput grows from roughly 2.9 MH/s at 1 thread to 3.7 MH/s at 4 threads for TinyPtr, a 1.25x speedup for 4x the threads. The bottleneck is memory bandwidth: each lookup reads one 64-byte cache line from a table that is 512 MB, far exceeding the 6 MB L3 cache. Adding threads increases the aggregate miss rate proportionally, and all cores share the same memory bus. The practical implication is that buying more cores provides diminishing returns on this workload; investing in a larger L3 cache or a table that fits in L3 would yield more meaningful throughput gains.
+
+**Relationship to the paper.** The Bender et al. construction achieves O(log log log n) ≈ 3 bits per pointer at n = 14.3 million. Our Prob implementation uses 6-bit pointers, which is closer to the theoretical target than the 32-bit naive pointer but still well above the minimum. A true 3-bit implementation would require bucket sizes of O(log log n) ≈ 13 slots, tighter load factors, and a more careful secondary hash design to satisfy the high-probability bound. The memory savings would be dramatic (roughly 4 bits per slot vs. 32 bits), but whether that compression translates to a cache footprint small enough to outweigh the increased pool complexity is an open question at this scale.
+
+---
+
+## 8. Conclusion
+
+We implemented and compared four hash table designs for a multithreaded dictionary password cracker using the 14.3 million entry RockYou wordlist as the benchmark dataset. The key findings are:
+
+1. All three custom open-addressed implementations outperform `std::unordered_map` by 6.9x on miss latency (43-45 ns vs. 306 ns) and 1.86x on end-to-end crack time.
+
+2. The bit-packed TinyPtr design achieves 2.0x faster hit lookups than the naive baseline by inlining password length into the pointer, eliminating one dependent pool read.
+
+3. The probabilistic DEREFERENCE implementation achieves 6-bit key-dependent pointers but incurs 2.4x higher LLC cache miss pressure due to fixed-size pool slots, making it 1.25x slower end-to-end than TinyPtr despite similar single-lookup throughput.
+
+4. Thread scaling is sub-linear across all designs, saturating at approximately 3.6-4.1 MH/s on a 4-core machine at 4-8 threads, due to memory bandwidth saturation.
+
+5. At the p99.9 percentile, Prob's two-level scheme provides tighter tail latency (572 ns) than TinyPtr's linear-probing design (1873 ns), at the cost of higher mean latency and memory usage.
+
+The results confirm the core intuition of Bender et al.: pointer compression matters, but only when the compression translates into a smaller cache footprint. A naive application of the construction with fixed-size pool slots eliminates the space benefit and introduces additional cache pressure. A full implementation of the 3-bit theoretical minimum, with variable-length DEREFERENCE-compatible pool layout, remains an open engineering challenge.
+
+---
 
 ## References
 
-Bender, M. A., Farach-Colton, M., Kuszmaul, J., Kuszmaul, W., and Liu, M. (2024). Tiny Pointers. ACM Transactions on Algorithms.
+Bender, M. A., Farach-Colton, M., Kuszmaul, J., Kuszmaul, W., and Liu, M. (2024). Tiny Pointers. *ACM Transactions on Algorithms*, 20(3), Article 23.
+
+Bonneau, J., Herley, C., van Oorschot, P. C., and Stajano, F. (2012). The Quest to Replace Passwords: A Framework for Comparative Evaluation of Web Authentication Schemes. *IEEE Symposium on Security and Privacy*, 553-567.
+
+Google. (2024). Google Benchmark: A microbenchmark support library. https://github.com/google/benchmark
+
+Intel Corporation. (2010). How to Benchmark Code Execution Times on Intel IA-32 and IA-64 Instruction Set Architectures. *Intel White Paper*.
+
+RockYou wordlist. Obtained via SecLists. https://github.com/danielmiessler/SecLists

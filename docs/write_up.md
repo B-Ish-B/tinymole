@@ -100,7 +100,7 @@ The baseline wraps `std::unordered_map<std::array<uint8_t,16>, std::string>`, wh
 | Implementation | Slot Size | Pointer Bits | Lookup Miss | Lookup Hit | Pool Layout |
 |---|---|---|---|---|---|
 | TinyPtr | 16 B | 32 (27 offset + 5 length) | O(1) expected | O(1) | Variable-length |
-| Naive | 16 B | 32 (raw offset) | O(1) expected | O(|pw|) strlen | Variable-length |
+| Naive | 16 B | 32 (raw offset) | O(1) expected | O(p_w) strlen | Variable-length |
 | Prob | 16 B | 6 (key-dependent) | O(1) expected | O(1) | Fixed 32 B slots |
 | std::unordered_map | ~140 B | 64 (heap pointer) | O(1) expected | O(1) | Heap per entry |
 

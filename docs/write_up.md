@@ -181,7 +181,7 @@ The mixed workload (95% miss, 5% hit) averages 46.2, 47.0, 51.6, and 318.8 ns fo
 
 ### 6.3 Cache Behavior
 
-Table 5 reports hardware counters from seven `perf stat` runs (trimmed mean, Figure 3). TinyPtr and Naive generate nearly identical cache pressure: approximately 43 LLC misses per 100 lookups and 30 L1d replacements per lookup, reflecting one cache miss per lookup when the full 14.3 million entry table does not fit in the 6 MB L3 cache. Prob generates 105 LLC misses per 100 lookups (2.5x higher) and 73 L1d replacements per lookup. This elevated miss rate comes from two sources: the fixed 32-byte pool slots (versus variable-length pool entries for TinyPtr/Naive) and the two-level bucket scheme, which on a miss may probe both primary and secondary regions before confirming absence.
+Table 5 reports hardware counters from seven `perf stat` runs (trimmed mean, Figure 3). TinyPtr and Naive generate nearly identical cache pressure: approximately 43 LLC misses per 100 lookups and 30 L1d replacements per 100 lookups, reflecting one cache miss per lookup when the full 14.3 million entry table does not fit in the 6 MB L3 cache. Prob generates 105 LLC misses per 100 lookups (2.5x higher) and 73 L1d replacements per 100 lookups. This elevated miss rate comes from two sources: the fixed 32-byte pool slots (versus variable-length pool entries for TinyPtr/Naive) and the two-level bucket scheme, which on a miss may probe both primary and secondary regions before confirming absence.
 
 StdMap's 117 LLC misses per 100 lookups is consistent with two pointer dereferences per lookup (bucket array and node pointer), each potentially cold.
 

@@ -15,24 +15,6 @@ make tui
 
 ---
 
-## Quick Start
-
-```bash
-git clone <repo> && cd tinymole
-direnv allow && uv sync
-make all && make test
-./build/cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --wordlist data/test_wordlist.txt
-# cracked: password
-```
-
-To crack against the full RockYou table, place `rockyou.txt` at `data/rockyou.txt`, then:
-
-```bash
-make crack HASH=<hex>
-```
-
----
-
 ## Results
 
 Benchmarked on a 4-core Intel CPU (4.1 GHz, 6 MB L3) against all 14,344,391 RockYou entries. End-to-end times use 4 threads targeting a mid-list entry, mean of 5 hyperfine runs.
@@ -53,6 +35,24 @@ Benchmarked on a 4-core Intel CPU (4.1 GHz, 6 MB L3) against all 14,344,391 Rock
 ![Lookup latency by workload](results/figures/fig2_workload_comparison.png)
 
 Throughput saturates around 3.6-4.1 MH/s at 4 threads (memory-bandwidth bound, not CPU bound). Full analysis in [docs/write_up.md](docs/write_up.md).
+
+---
+
+## Quick Start
+
+```bash
+git clone <repo> && cd tinymole
+direnv allow && uv sync
+make all && make test
+./build/cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --wordlist data/test_wordlist.txt
+# cracked: password
+```
+
+To crack against the full RockYou table, place `rockyou.txt` at `data/rockyou.txt`, then:
+
+```bash
+make crack HASH=<hex>
+```
 
 ---
 

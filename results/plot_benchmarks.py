@@ -28,7 +28,8 @@ for stale in ["fig2_cache_behavior", "fig3_thread_scaling", "fig4_walltime", "fi
 # ---------------------------------------------------------------------------
 
 plt.rcParams.update({
-    "font.family":        "serif",
+    "font.family":        "sans-serif",
+    "font.sans-serif":    ["Arial", "Helvetica Neue", "DejaVu Sans"],
     "font.size":          10,
     "axes.labelsize":     11,
     "axes.titlesize":     11,
@@ -42,8 +43,10 @@ plt.rcParams.update({
     "savefig.dpi":        300,
     "savefig.bbox":       "tight",
     "axes.grid":          True,
-    "grid.alpha":         0.25,
-    "grid.linestyle":     "--",
+    "axes.grid.axis":     "y",
+    "grid.alpha":         0.35,
+    "grid.linestyle":     "-",
+    "grid.color":         "#e0e0e0",
 })
 
 # ColorBrewer Dark2 -- perceptually distinct, colorblind-safe
@@ -300,9 +303,8 @@ add_sig_bracket(ax_zoom, 0, 2, y0 + 6.0,  p_tp_pr, label_offset=0.3)
 add_sig_bracket(ax_zoom, 1, 2, y0 + 12.0, p_na_pr, label_offset=0.3)
 
 fig.suptitle(
-    "Figure 1: Miss-Query Lookup Latency (Google Benchmark, n=5 reps, "
-    "14,344,391 entries, error bars = 95% CI)",
-    fontsize=9, y=1.02)
+    "Miss-query lookup latency (Google Benchmark, n=5, 95% CI)",
+    fontsize=9, y=1.01)
 plt.tight_layout()
 save(fig, "fig1_lookup_latency")
 
@@ -332,7 +334,7 @@ for wi, (wk, wl) in enumerate(zip(workload_keys, workload_display)):
 ax.set_ylabel("Latency (ns/op)")
 ax.set_xticks(x)
 ax.set_xticklabels(AXIS_LABELS, fontsize=9)
-ax.set_title("Figure 2: Lookup Latency by Workload (Google Benchmark, n=5, error bars = 95% CI)")
+ax.set_title("Lookup latency by workload (Google Benchmark, n=5, 95% CI)")
 ax.legend(loc="upper left", framealpha=0.9)
 y_max = max(gbench["hit"]["stdmap"]["mean"], gbench["miss"]["stdmap"]["mean"])
 ax.set_ylim(0, y_max * 1.3)
@@ -352,7 +354,7 @@ save(fig, "fig2_workload_comparison")
 # Figure 3: Cache hierarchy counters (3 subplots)
 # ---------------------------------------------------------------------------
 
-fig, axes = plt.subplots(1, 3, figsize=(13, 4))
+fig, axes = plt.subplots(1, 3, figsize=(11, 4))
 metrics = [
     ("misses_per_lookup",   "LLC Cache Misses per Lookup", "misses / lookup"),
     ("l1d_per_lookup",      "L1D Replacements per Lookup", "replacements / lookup"),
@@ -375,9 +377,8 @@ for ax, (key, title, ylabel) in zip(axes, metrics):
     ax.set_ylim(0, max(vals) * 1.2)
 
 fig.suptitle(
-    "Figure 3: Cache Hierarchy Counters (perf stat, n=7, trimmed, 95% CI, "
-    "2,000,000 miss queries, full RockYou)",
-    fontsize=9, y=1.02)
+    "Cache hierarchy counters (perf stat, n=7 trimmed, 95% CI, 2M miss queries)",
+    fontsize=9, y=1.01)
 plt.tight_layout()
 save(fig, "fig3_cache_counters")
 
@@ -402,7 +403,7 @@ ax1.set_title("IPC (higher is better)")
 ax1.set_ylim(0, max(ipc_vals) * 1.2)
 for bar, v in zip(b1, ipc_vals):
     ax1.text(bar.get_x() + bar.get_width() / 2, v + max(ipc_vals) * 0.02,
-             f"{v:.4f}", ha="center", va="bottom", fontsize=8.5)
+             f"{v:.3f}", ha="center", va="bottom", fontsize=8.5)
 
 b2 = ax2.bar(x, bmiss_vals, yerr=bmiss_ci, color=colors, edgecolor="white", linewidth=0.5,
              capsize=4, error_kw={"elinewidth": 1.2, "ecolor": "black"})
@@ -413,10 +414,10 @@ ax2.set_title("Branch Mispredictions per Lookup")
 ax2.set_ylim(0, max(bmiss_vals) * 1.2)
 for bar, v in zip(b2, bmiss_vals):
     ax2.text(bar.get_x() + bar.get_width() / 2, v + max(bmiss_vals) * 0.025,
-             f"{v:.4f}", ha="center", va="bottom", fontsize=8.5)
+             f"{v:.1f}", ha="center", va="bottom", fontsize=8.5)
 
-fig.suptitle("Figure 4: CPU Execution Efficiency (perf stat, n=7, trimmed, 95% CI, 2M lookups)",
-             fontsize=9, y=1.02)
+fig.suptitle("CPU execution efficiency (perf stat, n=7 trimmed, 95% CI, 2M lookups)",
+             fontsize=9, y=1.01)
 plt.tight_layout()
 save(fig, "fig4_ipc_branch")
 
@@ -457,9 +458,8 @@ ax_tail.set_xticks([95, 99, 99.9])
 ax_tail.set_xticklabels(["p95", "p99", "p99.9"])
 
 fig.suptitle(
-    "Figure 5: Latency Percentiles (RDTSC, 2M samples, 500K warmup, miss workload, "
-    "overhead-subtracted)",
-    fontsize=9, y=1.02)
+    "Lookup latency percentiles, miss workload (RDTSC, 2M samples, 500K warmup)",
+    fontsize=9, y=1.01)
 plt.tight_layout()
 save(fig, "fig5_latency_percentiles")
 
@@ -479,7 +479,7 @@ for impl, label in zip(IMPLS, LEG_LABELS):
 
 ax.set_xlabel("Thread count")
 ax.set_ylabel("Throughput (MH/s)")
-ax.set_title("Figure 6: Cracker Throughput Scaling\n(3 runs per cell, error bars = stddev)")
+ax.set_title("Cracker throughput scaling (3 runs per cell, error bars: stddev)")
 ax.set_xticks(threads)
 ax.legend(loc="upper left", ncol=1, fontsize=8)
 ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))
@@ -503,15 +503,18 @@ bars = ax.bar(x, hf_means, color=colors, edgecolor="white", linewidth=0.5)
 ax.errorbar(x, hf_means, yerr=[err_lo, err_hi], fmt="none",
             capsize=5, ecolor="#333333", elinewidth=1.5, capthick=1.5,
             label="min/max range")
+base_time = hf_means[0]
 for i, (bar, m, s) in enumerate(zip(bars, hf_means, hf_stds)):
-    ax.text(bar.get_x() + bar.get_width() / 2, hf_maxs[i] + 0.2,
-            f"{m:.2f}s\n±{s:.2f}s", ha="center", va="bottom", fontsize=8)
+    ratio = m / base_time
+    r_str = "baseline" if i == 0 else f"{ratio:.2f}x"
+    ax.text(bar.get_x() + bar.get_width() / 2, hf_maxs[i] + 0.25,
+            f"{m:.2f}s\n({r_str})", ha="center", va="bottom", fontsize=8)
 
 ax.set_ylabel("Wall-clock time (s)")
 ax.set_xticks(x)
 ax.set_xticklabels(AXIS_LABELS, fontsize=9)
-ax.set_title("Figure 7: End-to-End Crack Time\n(hyperfine, 5 runs, 2 warmups, 4 threads, entry ~7M)")
-ax.set_ylim(0, max(hf_maxs) * 1.3)
+ax.set_title("End-to-end crack time (hyperfine, 5 runs, 2 warmups, 4 threads)")
+ax.set_ylim(0, max(hf_maxs) * 1.35)
 ax.legend(fontsize=8)
 plt.tight_layout()
 save(fig, "fig7_walltime")
@@ -529,7 +532,7 @@ for bar, v in zip(bars, mem_mb):
 ax.set_ylabel("Peak RSS (MiB)")
 ax.set_xticks(x)
 ax.set_xticklabels(AXIS_LABELS, fontsize=9)
-ax.set_title("Figure 8: Peak Memory Usage\n(/usr/bin/time -v, 14,344,391 entries loaded)")
+ax.set_title("Peak memory usage (/usr/bin/time -v)")
 ax.set_ylim(0, max(mem_mb) * 1.2)
 plt.tight_layout()
 save(fig, "fig8_memory")

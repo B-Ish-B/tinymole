@@ -179,7 +179,34 @@ The mixed workload (95% miss, 5% hit) averages 46.2, 47.0, 51.6, and 318.8 ns fo
 
 ![Figure 2: Lookup latency by workload](../results/figures/fig2_workload_comparison.png)
 
-### 6.3 Tail Latency
+### 6.3 Cache Behavior
+
+Table 5 reports hardware counters from seven `perf stat` runs (trimmed mean, Figure 3). TinyPtr and Naive generate nearly identical cache pressure: approximately 43 LLC misses per 100 lookups and 30 L1d replacements per lookup, reflecting one cache miss per lookup when the full 14.3 million entry table does not fit in the 6 MB L3 cache. Prob generates 105 LLC misses per 100 lookups (2.5x higher) and 73 L1d replacements per lookup. This elevated miss rate comes from two sources: the fixed 32-byte pool slots (versus variable-length pool entries for TinyPtr/Naive) and the two-level bucket scheme, which on a miss may probe both primary and secondary regions before confirming absence.
+
+StdMap's 117 LLC misses per 100 lookups is consistent with two pointer dereferences per lookup (bucket array and node pointer), each potentially cold.
+
+**Table 5: Hardware Counters (perf stat, n=7 trimmed, 2M miss queries)**
+
+| Implementation | LLC Misses / 100 Lookups | L1D Repl. / 100 Lookups | dTLB Misses / 100 Lookups | IPC | LLC Miss Rate |
+|---|---|---|---|---|---|
+| TinyPtr | 42.72 | 29.59 | 3.19 | 2.078 | 85.2% |
+| Naive | 43.65 | 30.30 | 2.69 | 1.953 | 87.4% |
+| Prob | 104.94 | 72.51 | 11.39 | 1.801 | 90.6% |
+| std::unordered_map | 117.04 | 82.39 | 16.26 | 1.580 | 83.2% |
+
+The dTLB miss rate for Prob (11.39 misses per 100 lookups) is 3.6x higher than TinyPtr's (3.19), indicating that the two-level pool spans more distinct 4 KB pages than the variable-length pool, contributing to TLB pressure.
+
+![Figure 3: Cache hierarchy counters](../results/figures/fig3_cache_counters.png)
+
+### 6.4 CPU Execution Efficiency
+
+The IPC metric confirms that TinyPtr executes most efficiently: 2.078 instructions per cycle versus 1.953 for Naive, 1.801 for Prob, and 1.580 for StdMap. Higher IPC under a memory-bound workload indicates fewer stall cycles, consistent with TinyPtr's compact pool representation minimizing dependent memory accesses.
+
+Branch mispredictions per 100 lookups are highest for Prob (19.5), compared to TinyPtr (12.0), StdMap (13.2), and Naive (11.8). Prob's two-level bucket structure requires an extra conditional at each probe step to determine whether to consult the secondary region, widening the misprediction count relative to the flat open-addressed layouts.
+
+![Figure 4: IPC and branch mispredictions](../results/figures/fig4_ipc_branch.png)
+
+### 6.5 Tail Latency
 
 Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three custom implementations are indistinguishable (91-94 ns, elevated from the Google Benchmark throughput numbers due to RDTSC serialization overhead and a colder cache state). At p99 they remain close (405-425 ns). At p99.9 a divergence appears: TinyPtr's tail widens to 1873 ns while Naive and Prob are substantially tighter at 768 and 572 ns respectively. The TinyPtr p99.9 tail reflects occasional long probing chains in the open-addressed table; Prob's two-level scheme distributes load more evenly, keeping its tail narrower. StdMap's p99.9 latency is 8490 ns (14.8x higher than Prob's), driven by heap allocation jitter and deep bucket chains.
 
@@ -194,28 +221,7 @@ Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three
 
 ![Figure 5: Latency percentiles](../results/figures/fig5_latency_percentiles.png)
 
-### 6.4 Cache Behavior
-
-Table 5 reports hardware counters averaged over three `perf stat` runs (Figure 3). TinyPtr and Naive generate nearly identical cache pressure: approximately 43 LLC misses per 100 lookups and 30 L1d replacements per lookup, reflecting one cache miss per lookup when the full 14.3 million entry table does not fit in the 6 MB L3 cache. Prob generates 104 LLC misses per 100 lookups (2.4x higher) and 72 L1d replacements per lookup. This elevated miss rate comes from two sources: the fixed 32-byte pool slots (versus variable-length pool entries for TinyPtr/Naive) and the two-level bucket scheme, which on a miss may probe both primary and secondary regions before confirming absence.
-
-StdMap's 118 LLC misses per 100 lookups is consistent with two pointer dereferences per lookup (bucket array and node pointer), each potentially cold.
-
-The IPC metric confirms that TinyPtr executes most efficiently: 2.060 instructions per cycle versus 2.008 for Naive, 1.812 for Prob, and 1.559 for StdMap. Higher IPC under a memory-bound workload indicates fewer stall cycles, consistent with TinyPtr's compact pool representation minimizing dependent memory accesses.
-
-**Table 5: Hardware Counters (perf stat, avg of 3 runs, 2M miss queries)**
-
-| Implementation | LLC Misses / Lookup | L1D Repl. / Lookup | dTLB Misses / Lookup | IPC | LLC Miss Rate |
-|---|---|---|---|---|---|
-| TinyPtr | 42.94 | 29.52 | 3.10 | 2.060 | 85.5% |
-| Naive | 43.61 | 29.85 | 2.71 | 2.008 | 87.1% |
-| Prob | 104.14 | 72.43 | 11.42 | 1.812 | 88.7% |
-| std::unordered_map | 117.76 | 82.27 | 16.24 | 1.559 | 83.8% |
-
-The dTLB miss rate for Prob (11.42 misses per lookup) is 3.7x higher than TinyPtr's (3.10), indicating that the two-level pool spans more distinct 4 KB pages than the variable-length pool, contributing to TLB pressure.
-
-![Figure 3: Cache hierarchy counters](../results/figures/fig3_cache_counters.png)
-
-### 6.5 Thread Scaling
+### 6.6 Thread Scaling
 
 Figure 6 shows cracker throughput in MH/s as thread count increases from 1 to 8. All implementations exhibit sub-linear scaling: TinyPtr goes from 2.88 MH/s at 1 thread to 3.61 MH/s at 4 threads (1.25x speedup) and 3.71 MH/s at 8 threads. The machine has 4 physical cores, so the 4-to-8 thread jump provides negligible gain, confirming that the workload saturates memory bandwidth before exhausting CPU capacity. Adding threads increases parallelism but also increases LLC miss rate as multiple threads compete for the shared 6 MB L3 cache.
 
@@ -232,7 +238,7 @@ Prob shows the highest throughput at 8 threads (4.05 MH/s mean) despite its high
 
 ![Figure 6: Cracker throughput scaling](../results/figures/fig6_thread_scaling.png)
 
-### 6.6 End-to-End Crack Time
+### 6.7 End-to-End Crack Time
 
 Table 7 reports hyperfine wall-clock timing for a 4-thread crack of the mid-list target. TinyPtr completes in 9.226 s (mean, +/- 0.518 s), the fastest of the four. Naive takes 10.317 s (1.12x), Prob 11.501 s (1.25x), and StdMap 17.177 s (1.86x). Despite Prob's similar per-lookup latency to TinyPtr and Naive in the microbenchmark, its higher cache miss rate translates into a meaningful end-to-end penalty when the full working set is repeatedly scanned.
 
@@ -249,7 +255,7 @@ The TinyPtr lead over Naive (1.12x) primarily reflects the difference in hit-pat
 
 ![Figure 7: End-to-end wall time](../results/figures/fig7_walltime.png)
 
-### 6.7 Memory Usage
+### 6.8 Memory Usage
 
 Figure 8 shows peak RSS measured with `/usr/bin/time -v`. TinyPtr and Naive are essentially identical at 679.6 MB each, confirming that the pointer encoding does not affect overall footprint when both implementations use the same variable-length pool. The hash table itself accounts for roughly 512 MB (2^25 = 33.5 million 16-byte slots at 0.75 load factor) and the pool for the remaining 168 MB.
 
@@ -272,7 +278,7 @@ Prob uses 1,193.8 MB (1.76x TinyPtr). The increase comes from two sources: the f
 
 **Why TinyPtr beats Naive on hits but not misses.** Both implementations use identical 16-byte slots and the same pool structure, so their miss paths are indistinguishable at the instruction level. The difference is entirely on the hit path: TinyPtr's `tiny_ptr` word contains both the pool offset (27 bits) and the password length (5 bits), allowing `string_view` construction with two register operations and no pool access. Naive stores only a raw offset and must call `strlen` on the pool pointer, which scans pool memory sequentially. For passwords averaging 8-10 characters this adds one cache-line touch and a short loop, explaining the 2x latency difference (13.9 vs 27.7 ns). Inlining metadata into the pointer (even at the cost of constraining maximum pool size to 128 MB) eliminates a dependent memory access on the hot path.
 
-**Prob's cache pressure undermines its pointer savings.** The probabilistic implementation achieves 6-bit pointers (versus 32-bit for TinyPtr and Naive) but incurs 2.4x more LLC cache misses per lookup. Two structural choices drive this: the fixed 32-byte pool slots waste space for short passwords (RockYou's median password is 7 characters), and the two-level bucket scheme causes lookups to probe both primary and secondary regions on a miss. The end result is that Prob is 1.25x slower end-to-end despite similar single-lookup latency in the throughput microbenchmark. Pointer compression only reduces cache pressure when it also reduces the physical footprint of the working set; fixed-size pool slots prevent that here.
+**Prob's cache pressure undermines its pointer savings.** The probabilistic implementation achieves 6-bit pointers (versus 32-bit for TinyPtr and Naive) but incurs 2.5x more LLC cache misses per lookup. Two structural choices drive this: the fixed 32-byte pool slots waste space for short passwords (RockYou's median password is 7 characters), and the two-level bucket scheme causes lookups to probe both primary and secondary regions on a miss. The end result is that Prob is 1.25x slower end-to-end despite similar single-lookup latency in the throughput microbenchmark. Pointer compression only reduces cache pressure when it also reduces the physical footprint of the working set; fixed-size pool slots prevent that here.
 
 **Tail latency tradeoffs.** At p99.9, TinyPtr's tail (1873 ns) is 2.4x wider than Prob's (572 ns). Linear probing is susceptible to clustering at 0.75 load factor, and long runs appear occasionally in the miss path. Prob's two-level scheme provides a statistical bound on maximum bucket occupancy, keeping its tail tighter. For a batch offline cracker, median throughput matters more than tail latency and TinyPtr wins. For a latency-sensitive service, Prob's predictability would be preferable.
 
@@ -290,7 +296,7 @@ We implemented and compared four hash table designs for a multithreaded dictiona
 
 2. The bit-packed TinyPtr design achieves 2.0x faster hit lookups than the naive baseline by encoding password length directly in the pointer, eliminating one dependent pool read.
 
-3. The probabilistic DEREFERENCE implementation achieves 6-bit key-dependent pointers but incurs 2.4x higher LLC cache miss pressure due to fixed-size pool slots, making it 1.25x slower end-to-end than TinyPtr despite similar single-lookup throughput.
+3. The probabilistic DEREFERENCE implementation achieves 6-bit key-dependent pointers but incurs 2.5x higher LLC cache miss pressure due to fixed-size pool slots, making it 1.25x slower end-to-end than TinyPtr despite similar single-lookup throughput.
 
 4. Thread scaling is sub-linear across all designs, saturating at approximately 3.6-4.1 MH/s on a 4-core machine at 4-8 threads due to memory bandwidth saturation.
 

@@ -1,58 +1,141 @@
-=== perf stat: tinyptr (3 runs) ===
+=== perf stat: tinyptr (7 runs) ===
 --- run 1 ---
 tiny_ptr lookups done (sink=0)
 
- Performance counter stats for 'build/perf_tinyptr':
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
 
-        85,487,179      cache-misses:u                                                        
-       100,265,297      cache-references:u                                                    
-    56,046,774,245      instructions:u                                                        
-    27,193,067,643      cycles:u                                                              
-        23,922,679      branch-misses:u                                                       
-         6,190,271      dtlb-load-misses:u                                                    
-        59,362,512      l1d.replacement:u                                                     
+        83,328,793      cache-misses:u                                                        
+        98,166,877      cache-references:u                                                    
+    56,046,794,513      instructions:u                                                        
+    27,481,482,281      cycles:u                                                              
+        23,880,010      branch-misses:u                                                       
+         6,976,499      dtlb-load-misses:u                                                    
+        59,138,019      l1d.replacement:u                                                     
 
-       7.531698916 seconds time elapsed
+       7.285774510 seconds time elapsed
 
-       7.174703000 seconds user
-       0.309629000 seconds sys
+       6.871694000 seconds user
+       0.333846000 seconds sys
+
 
 
 --- run 2 ---
 tiny_ptr lookups done (sink=0)
 
- Performance counter stats for 'build/perf_tinyptr':
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
 
-        85,544,103      cache-misses:u                                                        
-        99,962,956      cache-references:u                                                    
-    56,046,774,640      instructions:u                                                        
-    26,939,566,361      cycles:u                                                              
-        23,954,949      branch-misses:u                                                       
-         6,197,264      dtlb-load-misses:u                                                    
-        58,887,598      l1d.replacement:u                                                     
+        86,735,717      cache-misses:u                                                        
+       100,848,021      cache-references:u                                                    
+    56,046,794,376      instructions:u                                                        
+    27,557,094,365      cycles:u                                                              
+        23,865,307      branch-misses:u                                                       
+         5,859,310      dtlb-load-misses:u                                                    
+        59,680,416      l1d.replacement:u                                                     
 
-       7.630893469 seconds time elapsed
+       7.163645391 seconds time elapsed
 
-       7.281851000 seconds user
-       0.303383000 seconds sys
+       6.831480000 seconds user
+       0.302717000 seconds sys
+
 
 
 --- run 3 ---
 tiny_ptr lookups done (sink=0)
 
- Performance counter stats for 'build/perf_tinyptr':
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
 
-        86,580,262      cache-misses:u                                                        
-       100,296,298      cache-references:u                                                    
-    56,046,773,272      instructions:u                                                        
-    27,368,062,057      cycles:u                                                              
-        23,937,905      branch-misses:u                                                       
-         6,191,665      dtlb-load-misses:u                                                    
-        58,854,800      l1d.replacement:u                                                     
+        86,405,999      cache-misses:u                                                        
+       101,084,164      cache-references:u                                                    
+    56,046,795,525      instructions:u                                                        
+    26,633,737,691      cycles:u                                                              
+        23,939,123      branch-misses:u                                                       
+         6,192,994      dtlb-load-misses:u                                                    
+        59,031,107      l1d.replacement:u                                                     
 
-       7.601405959 seconds time elapsed
+       7.093678503 seconds time elapsed
 
-       7.250917000 seconds user
-       0.312015000 seconds sys
+       6.780822000 seconds user
+       0.285750000 seconds sys
+
+
+
+--- run 4 ---
+tiny_ptr lookups done (sink=0)
+
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
+
+        85,654,892      cache-misses:u                                                        
+       100,705,428      cache-references:u                                                    
+    56,046,794,346      instructions:u                                                        
+    27,087,087,306      cycles:u                                                              
+        23,952,486      branch-misses:u                                                       
+         6,200,879      dtlb-load-misses:u                                                    
+        59,636,921      l1d.replacement:u                                                     
+
+       7.137416923 seconds time elapsed
+
+       6.786254000 seconds user
+       0.305483000 seconds sys
+
+
+
+--- run 5 ---
+tiny_ptr lookups done (sink=0)
+
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
+
+        85,137,109      cache-misses:u                                                        
+       100,096,925      cache-references:u                                                    
+    56,046,795,833      instructions:u                                                        
+    26,880,981,616      cycles:u                                                              
+        23,988,117      branch-misses:u                                                       
+         6,313,581      dtlb-load-misses:u                                                    
+        59,040,943      l1d.replacement:u                                                     
+
+       7.676104426 seconds time elapsed
+
+       7.313282000 seconds user
+       0.327205000 seconds sys
+
+
+
+--- run 6 ---
+tiny_ptr lookups done (sink=0)
+
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
+
+        86,640,002      cache-misses:u                                                        
+       101,349,822      cache-references:u                                                    
+    56,046,793,919      instructions:u                                                        
+    26,622,941,855      cycles:u                                                              
+        24,004,504      branch-misses:u                                                       
+         6,180,065      dtlb-load-misses:u                                                    
+        59,062,417      l1d.replacement:u                                                     
+
+       6.815877084 seconds time elapsed
+
+       6.490665000 seconds user
+       0.296651000 seconds sys
+
+
+
+--- run 7 ---
+tiny_ptr lookups done (sink=0)
+
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
+
+        82,440,151      cache-misses:u                                                        
+        97,374,011      cache-references:u                                                    
+    56,046,794,319      instructions:u                                                        
+    26,801,363,508      cycles:u                                                              
+        23,957,321      branch-misses:u                                                       
+         7,337,349      dtlb-load-misses:u                                                    
+        57,545,081      l1d.replacement:u                                                     
+
+       6.892352077 seconds time elapsed
+
+       6.559941000 seconds user
+       0.303859000 seconds sys
+
 
 

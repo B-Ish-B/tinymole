@@ -1,58 +1,141 @@
-=== perf stat: stdmap (3 runs) ===
+=== perf stat: stdmap (7 runs) ===
 --- run 1 ---
 stdmap lookups done (sink=0)
 
- Performance counter stats for 'build/perf_stdmap':
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_stdmap':
 
-       236,790,447      cache-misses:u                                                        
-       282,457,164      cache-references:u                                                    
-    68,928,251,992      instructions:u                                                        
-    45,283,525,181      cycles:u                                                              
-        26,386,922      branch-misses:u                                                       
-        32,504,794      dtlb-load-misses:u                                                    
-       167,371,128      l1d.replacement:u                                                     
+       231,167,394      cache-misses:u                                                        
+       277,575,705      cache-references:u                                                    
+    68,928,297,020      instructions:u                                                        
+    44,384,046,455      cycles:u                                                              
+        26,473,598      branch-misses:u                                                       
+        32,506,253      dtlb-load-misses:u                                                    
+       165,689,479      l1d.replacement:u                                                     
 
-      12.884895673 seconds time elapsed
+      12.785809861 seconds time elapsed
 
-      12.124716000 seconds user
-       0.684813000 seconds sys
+      12.068548000 seconds user
+       0.652990000 seconds sys
+
 
 
 --- run 2 ---
 stdmap lookups done (sink=0)
 
- Performance counter stats for 'build/perf_stdmap':
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_stdmap':
 
-       233,868,864      cache-misses:u                                                        
-       277,017,168      cache-references:u                                                    
-    68,928,255,403      instructions:u                                                        
-    43,766,835,380      cycles:u                                                              
-        26,428,749      branch-misses:u                                                       
-        32,465,111      dtlb-load-misses:u                                                    
-       163,974,121      l1d.replacement:u                                                     
+       236,493,978      cache-misses:u                                                        
+       283,145,612      cache-references:u                                                    
+    68,928,273,106      instructions:u                                                        
+    43,352,150,439      cycles:u                                                              
+        26,348,641      branch-misses:u                                                       
+        32,735,596      dtlb-load-misses:u                                                    
+       164,317,273      l1d.replacement:u                                                     
 
-      13.611704192 seconds time elapsed
+      12.002047909 seconds time elapsed
 
-      12.819999000 seconds user
-       0.717426000 seconds sys
+      11.301062000 seconds user
+       0.650725000 seconds sys
+
 
 
 --- run 3 ---
 stdmap lookups done (sink=0)
 
- Performance counter stats for 'build/perf_stdmap':
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_stdmap':
 
-       235,881,877      cache-misses:u                                                        
-       279,373,459      cache-references:u                                                    
-    68,928,254,641      instructions:u                                                        
-    43,592,400,163      cycles:u                                                              
-        26,449,160      branch-misses:u                                                       
-        32,481,946      dtlb-load-misses:u                                                    
-       162,304,198      l1d.replacement:u                                                     
+       233,446,801      cache-misses:u                                                        
+       282,812,190      cache-references:u                                                    
+    68,928,275,079      instructions:u                                                        
+    43,039,514,306      cycles:u                                                              
+        26,507,813      branch-misses:u                                                       
+        32,485,360      dtlb-load-misses:u                                                    
+       163,705,902      l1d.replacement:u                                                     
 
-      13.445841609 seconds time elapsed
+      12.237654925 seconds time elapsed
 
-      12.640221000 seconds user
-       0.727694000 seconds sys
+      11.507177000 seconds user
+       0.681265000 seconds sys
+
+
+
+--- run 4 ---
+stdmap lookups done (sink=0)
+
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_stdmap':
+
+       231,871,983      cache-misses:u                                                        
+       276,181,271      cache-references:u                                                    
+    68,928,274,573      instructions:u                                                        
+    44,303,269,433      cycles:u                                                              
+        26,531,217      branch-misses:u                                                       
+        32,506,588      dtlb-load-misses:u                                                    
+       163,250,260      l1d.replacement:u                                                     
+
+      12.701846008 seconds time elapsed
+
+      11.963421000 seconds user
+       0.675058000 seconds sys
+
+
+
+--- run 5 ---
+stdmap lookups done (sink=0)
+
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_stdmap':
+
+       234,792,020      cache-misses:u                                                        
+       279,586,501      cache-references:u                                                    
+    68,928,274,737      instructions:u                                                        
+    44,001,250,853      cycles:u                                                              
+        26,417,230      branch-misses:u                                                       
+        32,474,126      dtlb-load-misses:u                                                    
+       164,057,941      l1d.replacement:u                                                     
+
+      12.425256510 seconds time elapsed
+
+      11.710330000 seconds user
+       0.655965000 seconds sys
+
+
+
+--- run 6 ---
+stdmap lookups done (sink=0)
+
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_stdmap':
+
+       234,351,318      cache-misses:u                                                        
+       282,766,910      cache-references:u                                                    
+    68,928,274,191      instructions:u                                                        
+    43,424,282,755      cycles:u                                                              
+        26,444,517      branch-misses:u                                                       
+        32,540,885      dtlb-load-misses:u                                                    
+       166,488,650      l1d.replacement:u                                                     
+
+      12.405320279 seconds time elapsed
+
+      11.666285000 seconds user
+       0.688055000 seconds sys
+
+
+
+--- run 7 ---
+stdmap lookups done (sink=0)
+
+ Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_stdmap':
+
+       235,960,947      cache-misses:u                                                        
+       286,345,429      cache-references:u                                                    
+    68,928,274,196      instructions:u                                                        
+    43,122,512,528      cycles:u                                                              
+        26,450,035      branch-misses:u                                                       
+        32,589,097      dtlb-load-misses:u                                                    
+       166,174,150      l1d.replacement:u                                                     
+
+      12.232623105 seconds time elapsed
+
+      11.516808000 seconds user
+       0.667332000 seconds sys
+
 
 

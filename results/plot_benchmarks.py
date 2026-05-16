@@ -56,7 +56,7 @@ COLORS = {
 IMPLS       = ["tinyptr", "naive", "prob", "stdmap"]
 AXIS_LABELS = ["TinyPtr", "Naive", "Prob", "StdMap"]
 LEG_LABELS  = ["TinyPtr (bit-packed)", "Naive (full offset)",
-               "Prob. (key-dep.)", "std::unordered_map"]
+               "Prob (key-dep.)", "std::unordered_map"]
 
 N_QUERIES = 2_000_000
 x         = np.arange(len(IMPLS))
@@ -88,56 +88,75 @@ gbench = {
     },
 }
 
-# perf stat: 3 runs, 2M miss queries, full RockYou
+# perf stat: 7 runs, 2M miss queries, full RockYou
+# trimmed mean: per metric, drop highest and lowest, compute mean+CI on remaining 5
 perf_raw = {
     "tinyptr": {
-        "cache_misses":    [85_487_179,  85_544_103,  86_580_262],
-        "cache_refs":      [100_265_297, 99_962_956,  100_296_298],
-        "instructions":    [56_046_774_245, 56_046_774_640, 56_046_773_272],
-        "cycles":          [27_193_067_643, 26_939_566_361, 27_368_062_057],
-        "branch_misses":   [23_922_679,  23_954_949,  23_937_905],
-        "dtlb_misses":     [6_190_271,   6_197_264,   6_191_665],
-        "l1d_replacement": [59_362_512,  58_887_598,  58_854_800],
+        "cache_misses":    [83_328_793, 86_735_717, 86_405_999, 85_654_892, 85_137_109, 86_640_002, 82_440_151],
+        "cache_refs":      [98_166_877, 100_848_021, 101_084_164, 100_705_428, 100_096_925, 101_349_822, 97_374_011],
+        "instructions":    [56_046_794_513, 56_046_794_376, 56_046_795_525, 56_046_794_346, 56_046_795_833, 56_046_793_919, 56_046_794_319],
+        "cycles":          [27_481_482_281, 27_557_094_365, 26_633_737_691, 27_087_087_306, 26_880_981_616, 26_622_941_855, 26_801_363_508],
+        "branch_misses":   [23_880_010, 23_865_307, 23_939_123, 23_952_486, 23_988_117, 24_004_504, 23_957_321],
+        "dtlb_misses":     [6_976_499, 5_859_310, 6_192_994, 6_200_879, 6_313_581, 6_180_065, 7_337_349],
+        "l1d_replacement": [59_138_019, 59_680_416, 59_031_107, 59_636_921, 59_040_943, 59_062_417, 57_545_081],
     },
     "naive": {
-        "cache_misses":    [88_101_829,  87_544_835,  86_019_067],
-        "cache_refs":      [101_205_700, 101_271_120, 99_602_804],
-        "instructions":    [56_173_186_762, 56_173_186_091, 56_173_185_270],
-        "cycles":          [27_650_904_427, 27_940_002_146, 28_324_836_546],
-        "branch_misses":   [23_605_900,  23_609_046,  23_630_635],
-        "dtlb_misses":     [5_235_785,   5_232_137,   5_763_798],
-        "l1d_replacement": [59_805_760,  59_730_885,  59_562_123],
+        "cache_misses":    [88_017_871, 88_782_217, 87_829_860, 88_733_494, 77_453_091, 83_119_408, 89_421_136],
+        "cache_refs":      [101_788_373, 101_333_690, 100_794_306, 101_413_835, 88_623_440, 94_352_767, 102_277_574],
+        "instructions":    [56_173_208_067, 56_173_208_435, 56_173_208_369, 56_173_208_810, 56_173_211_701, 56_173_210_252, 56_173_208_917],
+        "cycles":          [27_612_758_333, 28_158_049_527, 28_375_981_896, 28_579_041_868, 32_863_881_774, 30_623_825_708, 28_232_688_379],
+        "branch_misses":   [23_673_098, 23_630_655, 23_561_306, 23_661_920, 23_631_059, 23_677_794, 23_625_360],
+        "dtlb_misses":     [5_264_471, 5_168_288, 5_286_966, 5_299_849, 6_196_330, 5_808_437, 5_247_340],
+        "l1d_replacement": [59_965_315, 60_337_145, 59_874_091, 60_437_749, 63_573_904, 62_206_048, 60_058_047],
     },
     "prob": {
-        "cache_misses":    [209_531_836, 206_759_604, 208_562_361],
-        "cache_refs":      [234_721_718, 231_813_384, 233_550_481],
-        "instructions":    [57_971_328_247, 57_971_330_589, 57_971_328_499],
-        "cycles":          [32_684_592_585, 31_336_683_282, 32_102_622_687],
-        "branch_misses":   [38_909_128,  38_983_202,  38_980_374],
-        "dtlb_misses":     [22_814_144,  22_890_154,  22_817_242],
-        "l1d_replacement": [144_995_432, 144_473_497, 145_103_905],
+        "cache_misses":    [210_459_953, 210_351_815, 209_698_017, 211_273_266, 210_493_410, 208_367_135, 205_717_788],
+        "cache_refs":      [231_962_832, 233_514_821, 231_828_175, 232_707_667, 231_745_424, 230_358_023, 226_850_380],
+        "instructions":    [57_971_369_882, 57_971_351_716, 57_971_352_312, 57_971_351_239, 57_971_351_602, 57_971_351_965, 57_971_351_939],
+        "cycles":          [31_964_984_659, 31_514_774_151, 31_880_065_464, 32_153_213_597, 32_362_645_209, 32_607_320_122, 32_597_997_850],
+        "branch_misses":   [38_930_457, 39_033_387, 39_073_358, 39_032_359, 39_080_153, 38_883_766, 38_909_858],
+        "dtlb_misses":     [21_871_527, 22_785_509, 22_929_913, 22_713_445, 22_705_809, 22_882_379, 22_851_767],
+        "l1d_replacement": [144_710_656, 144_751_031, 145_119_243, 144_313_391, 144_947_292, 145_705_702, 145_528_914],
     },
     "stdmap": {
-        "cache_misses":    [236_790_447, 233_868_864, 235_881_877],
-        "cache_refs":      [282_457_164, 277_017_168, 279_373_459],
-        "instructions":    [68_928_251_992, 68_928_255_403, 68_928_254_641],
-        "cycles":          [45_283_525_181, 43_766_835_380, 43_592_400_163],
-        "branch_misses":   [26_386_922,  26_428_749,  26_449_160],
-        "dtlb_misses":     [32_504_794,  32_465_111,  32_481_946],
-        "l1d_replacement": [167_371_128, 163_974_121, 162_304_198],
+        "cache_misses":    [231_167_394, 236_493_978, 233_446_801, 231_871_983, 234_792_020, 234_351_318, 235_960_947],
+        "cache_refs":      [277_575_705, 283_145_612, 282_812_190, 276_181_271, 279_586_501, 282_766_910, 286_345_429],
+        "instructions":    [68_928_297_020, 68_928_273_106, 68_928_275_079, 68_928_274_573, 68_928_274_737, 68_928_274_191, 68_928_274_196],
+        "cycles":          [44_384_046_455, 43_352_150_439, 43_039_514_306, 44_303_269_433, 44_001_250_853, 43_424_282_755, 43_122_512_528],
+        "branch_misses":   [26_473_598, 26_348_641, 26_507_813, 26_531_217, 26_417_230, 26_444_517, 26_450_035],
+        "dtlb_misses":     [32_506_253, 32_735_596, 32_485_360, 32_506_588, 32_474_126, 32_540_885, 32_589_097],
+        "l1d_replacement": [165_689_479, 164_317_273, 163_705_902, 163_250_260, 164_057_941, 166_488_650, 166_174_150],
     },
 }
 
 perf = {}
 for impl, d in perf_raw.items():
-    avg = {k: sum(v) / len(v) for k, v in d.items()}
-    avg["misses_per_lookup"]      = avg["cache_misses"]    / N_QUERIES
-    avg["ipc"]                    = avg["instructions"]    / avg["cycles"]
-    avg["miss_rate_pct"]          = 100.0 * avg["cache_misses"] / avg["cache_refs"]
-    avg["l1d_per_lookup"]         = avg["l1d_replacement"] / N_QUERIES
-    avg["dtlb_per_lookup"]        = avg["dtlb_misses"]     / N_QUERIES
-    avg["branch_miss_per_lookup"] = avg["branch_misses"]   / N_QUERIES
-    perf[impl] = avg
+    n   = len(d["cache_misses"])
+    avg = {k: np.mean(v) for k, v in d.items()}
+
+    def _perf_ci(vals):
+        a = np.array(sorted(vals), dtype=float)[1:-1]  # drop min and max
+        nt = len(a)
+        m = float(a.mean())
+        s = float(a.std(ddof=1))
+        t_crit = float(stats.t.ppf(0.975, df=nt - 1))
+        return m, t_crit * s / np.sqrt(nt)
+
+    ipc_per_run = [d["instructions"][i] / d["cycles"][i] for i in range(n)]
+    m_miss,  ci_miss  = _perf_ci([v / N_QUERIES for v in d["cache_misses"]])
+    m_l1d,   ci_l1d   = _perf_ci([v / N_QUERIES for v in d["l1d_replacement"]])
+    m_dtlb,  ci_dtlb  = _perf_ci([v / N_QUERIES for v in d["dtlb_misses"]])
+    m_bmiss, ci_bmiss = _perf_ci([v / N_QUERIES for v in d["branch_misses"]])
+    m_ipc,   ci_ipc   = _perf_ci(ipc_per_run)
+
+    perf[impl] = {
+        "misses_per_lookup":         m_miss,  "misses_per_lookup_ci":         ci_miss,
+        "l1d_per_lookup":            m_l1d,   "l1d_per_lookup_ci":            ci_l1d,
+        "dtlb_per_lookup":           m_dtlb,  "dtlb_per_lookup_ci":           ci_dtlb,
+        "branch_miss_per_lookup":    m_bmiss, "branch_miss_per_lookup_ci":    ci_bmiss,
+        "ipc":                       m_ipc,   "ipc_ci":                       ci_ipc,
+        "miss_rate_pct": 100.0 * avg["cache_misses"] / avg["cache_refs"],
+    }
 
 # RDTSC percentile latency: 2M samples, 500K warmup, miss workload
 latency = {
@@ -317,14 +336,14 @@ ax.set_title("Figure 2: Lookup Latency by Workload (Google Benchmark, n=5, error
 ax.legend(loc="upper left", framealpha=0.9)
 y_max = max(gbench["hit"]["stdmap"]["mean"], gbench["miss"]["stdmap"]["mean"])
 ax.set_ylim(0, y_max * 1.3)
-# Value labels on the non-stdmap bars for readability
+stdmap_label_offset = max(gbench[wk]["stdmap"]["mean"] for wk in workload_keys) * 0.012
 for wi, wk in enumerate(workload_keys):
     for ii, impl in enumerate(IMPLS):
-        if impl == "stdmap":
-            continue
-        m = gbench[wk][impl]["mean"]
-        ax.text(ii + offsets[wi], m + 1.2, f"{m:.1f}",
-                ha="center", va="bottom", fontsize=6.5, color="#222222")
+        m      = gbench[wk][impl]["mean"]
+        loff   = stdmap_label_offset if impl == "stdmap" else 1.2
+        lsize  = 7.0 if impl == "stdmap" else 6.5
+        ax.text(ii + offsets[wi], m + loff, f"{m:.1f}",
+                ha="center", va="bottom", fontsize=lsize, color="#222222")
 
 plt.tight_layout()
 save(fig, "fig2_workload_comparison")
@@ -341,8 +360,10 @@ metrics = [
 ]
 
 for ax, (key, title, ylabel) in zip(axes, metrics):
-    vals = [perf[i][key] for i in IMPLS]
-    bars = ax.bar(x, vals, color=colors, edgecolor="white", linewidth=0.5)
+    vals = [perf[i][key]           for i in IMPLS]
+    errs = [perf[i][key + "_ci"]   for i in IMPLS]
+    bars = ax.bar(x, vals, yerr=errs, color=colors, edgecolor="white", linewidth=0.5,
+                  capsize=4, error_kw={"elinewidth": 1.2, "ecolor": "black"})
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xticks(x)
@@ -354,7 +375,7 @@ for ax, (key, title, ylabel) in zip(axes, metrics):
     ax.set_ylim(0, max(vals) * 1.2)
 
 fig.suptitle(
-    "Figure 3: Cache Hierarchy Counters (perf stat, avg of 3 runs, "
+    "Figure 3: Cache Hierarchy Counters (perf stat, n=7, trimmed, 95% CI, "
     "2,000,000 miss queries, full RockYou)",
     fontsize=9, y=1.02)
 plt.tight_layout()
@@ -369,7 +390,11 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.5, 4))
 ipc_vals   = [perf[i]["ipc"]                    for i in IMPLS]
 bmiss_vals = [perf[i]["branch_miss_per_lookup"]  for i in IMPLS]
 
-b1 = ax1.bar(x, ipc_vals, color=colors, edgecolor="white", linewidth=0.5)
+ipc_ci    = [perf[i]["ipc_ci"]                   for i in IMPLS]
+bmiss_ci  = [perf[i]["branch_miss_per_lookup_ci"] for i in IMPLS]
+
+b1 = ax1.bar(x, ipc_vals, yerr=ipc_ci, color=colors, edgecolor="white", linewidth=0.5,
+             capsize=4, error_kw={"elinewidth": 1.2, "ecolor": "black"})
 ax1.set_ylabel("Instructions per Cycle (IPC)")
 ax1.set_xticks(x)
 ax1.set_xticklabels(AXIS_LABELS, fontsize=9)
@@ -379,7 +404,8 @@ for bar, v in zip(b1, ipc_vals):
     ax1.text(bar.get_x() + bar.get_width() / 2, v + max(ipc_vals) * 0.02,
              f"{v:.4f}", ha="center", va="bottom", fontsize=8.5)
 
-b2 = ax2.bar(x, bmiss_vals, color=colors, edgecolor="white", linewidth=0.5)
+b2 = ax2.bar(x, bmiss_vals, yerr=bmiss_ci, color=colors, edgecolor="white", linewidth=0.5,
+             capsize=4, error_kw={"elinewidth": 1.2, "ecolor": "black"})
 ax2.set_ylabel("Branch Misses per Lookup")
 ax2.set_xticks(x)
 ax2.set_xticklabels(AXIS_LABELS, fontsize=9)
@@ -389,7 +415,7 @@ for bar, v in zip(b2, bmiss_vals):
     ax2.text(bar.get_x() + bar.get_width() / 2, v + max(bmiss_vals) * 0.025,
              f"{v:.4f}", ha="center", va="bottom", fontsize=8.5)
 
-fig.suptitle("Figure 4: CPU Execution Efficiency (perf stat, avg of 3 runs, 2M lookups)",
+fig.suptitle("Figure 4: CPU Execution Efficiency (perf stat, n=7, trimmed, 95% CI, 2M lookups)",
              fontsize=9, y=1.02)
 plt.tight_layout()
 save(fig, "fig4_ipc_branch")
@@ -564,7 +590,7 @@ for impl in IMPLS:
 
 print()
 print("=" * 80)
-print("TABLE 4: Hardware Counters (perf stat, avg of 3 runs, 2M miss queries)")
+print("TABLE 4: Hardware Counters (perf stat, n=7 trimmed, 2M miss queries)")
 print("=" * 80)
 print(f"{'Impl':<10} {'Miss/Lkup':>10} {'L1D/Lkup':>10} {'dTLB/Lkup':>11} "
       f"{'IPC':>7} {'MissRate':>10}")

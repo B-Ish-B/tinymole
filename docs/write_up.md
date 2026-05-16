@@ -100,7 +100,7 @@ The baseline wraps `std::unordered_map<std::array<uint8_t,16>, std::string>`, wh
 | Implementation | Slot Size | Pointer Bits | Lookup Miss | Lookup Hit | Pool Layout |
 |---|---|---|---|---|---|
 | TinyPtr | 16 B | 32 (27 offset + 5 length) | O(1) expected | O(1) | Variable-length |
-| Naive | 16 B | 32 (raw offset) | O(1) expected | O(p_w) strlen | Variable-length |
+| Naive | 16 B | 32 (raw offset) | O(1) expected | O(len) strlen | Variable-length |
 | Prob | 16 B | 6 (key-dependent) | O(1) expected | O(1) | Fixed 32 B slots |
 | std::unordered_map | ~140 B | 64 (heap pointer) | O(1) expected | O(1) | Heap per entry |
 
@@ -149,16 +149,15 @@ The miss path is memory-bound: on a miss, all three custom implementations check
 | Prob | 43.847 | 0.488 | 43.766 | [43.241, 44.453] |
 | std::unordered_map | 305.859 | 1.639 | 306.209 | [303.826, 307.892] |
 
-**Table 2: Pairwise Statistical Significance, Miss Latency (Welch t-test, n=5)**
+**Table 2: Pairwise Statistical Significance, Miss Latency (Welch t-test, n=5; custom implementations only)**
+
+All custom-vs-StdMap comparisons are trivially significant (p < 0.001, Cohen's d > 200) and are omitted.
 
 | Pair | t-stat | p-value | Sig. | Cohen's d |
 |---|---|---|---|---|
 | TinyPtr vs. Naive | 3.782 | 0.0054 | ** | 2.392 |
 | TinyPtr vs. Prob | 1.669 | 0.1398 | ns | 1.056 |
-| TinyPtr vs. StdMap | -324.2 | < 0.001 | *** | 205.1 |
 | Naive vs. Prob | -2.808 | 0.0264 | * | 1.776 |
-| Naive vs. StdMap | -327.6 | < 0.001 | *** | 207.2 |
-| Prob vs. StdMap | -342.6 | < 0.001 | *** | 216.7 |
 
 ![Figure 1: Miss-query lookup latency](../results/figures/fig1_lookup_latency.png)
 

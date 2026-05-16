@@ -288,19 +288,16 @@ ax_zoom.set_ylabel("Latency (ns/op)")
 ax_zoom.set_xticks(zoom_x)
 ax_zoom.set_xticklabels(z_labels, fontsize=9)
 ax_zoom.set_title("Custom Implementations (zoomed, 95% CI)")
-ax_zoom.set_ylim(0, max(zm) * 1.85)
+ax_zoom.set_ylim(0, 56)
 for bar, m in zip(bars2, zm):
-    ax_zoom.text(bar.get_x() + bar.get_width() / 2, m + 0.5,
-                 f"{m:.3f}", ha="center", va="bottom", fontsize=8.5)
+    ax_zoom.text(bar.get_x() + bar.get_width() / 2, m + 0.4,
+                 f"{m:.1f}", ha="center", va="bottom", fontsize=8.5)
 
-# Significance brackets
+# Significance brackets: only show significant pairs; omit ns (TinyPtr vs Prob)
 _, p_tp_na = welch_t_test(zm[0], zs[0], 5, zm[1], zs[1], 5)
-_, p_tp_pr = welch_t_test(zm[0], zs[0], 5, zm[2], zs[2], 5)
 _, p_na_pr = welch_t_test(zm[1], zs[1], 5, zm[2], zs[2], 5)
-y0 = max(zm) * 1.28
-add_sig_bracket(ax_zoom, 0, 1, y0,        p_tp_na, label_offset=0.3)
-add_sig_bracket(ax_zoom, 0, 2, y0 + 6.0,  p_tp_pr, label_offset=0.3)
-add_sig_bracket(ax_zoom, 1, 2, y0 + 12.0, p_na_pr, label_offset=0.3)
+add_sig_bracket(ax_zoom, 0, 1, 47.5, p_tp_na, label_offset=0.3)
+add_sig_bracket(ax_zoom, 1, 2, 51.0, p_na_pr, label_offset=0.3)
 
 fig.suptitle(
     "Miss-query lookup latency (Google Benchmark, n=5, 95% CI)",

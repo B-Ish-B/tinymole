@@ -356,9 +356,9 @@ save(fig, "fig2_workload_comparison")
 
 fig, axes = plt.subplots(1, 3, figsize=(11, 4))
 metrics = [
-    ("misses_per_lookup",   "LLC Cache Misses per Lookup", "misses / lookup"),
-    ("l1d_per_lookup",      "L1D Replacements per Lookup", "replacements / lookup"),
-    ("dtlb_per_lookup",     "dTLB Misses per Lookup",      "misses / lookup"),
+    ("misses_per_lookup",   "LLC Cache Misses per 100 Lookups", "misses / 100 lookups"),
+    ("l1d_per_lookup",      "L1D Replacements per 100 Lookups", "replacements / 100 lookups"),
+    ("dtlb_per_lookup",     "dTLB Misses per 100 Lookups",      "misses / 100 lookups"),
 ]
 
 for ax, (key, title, ylabel) in zip(axes, metrics):
@@ -427,20 +427,20 @@ save(fig, "fig4_ipc_branch")
 
 fig, (ax_full, ax_tail) = plt.subplots(1, 2, figsize=(11, 4))
 
-pct_vals  = [50, 95, 99, 99.9]
+pct_x    = [0, 1, 2, 3]
 pct_label = ["p50", "p95", "p99", "p99.9"]
 
 for impl, label in zip(IMPLS, LEG_LABELS):
     d  = latency[impl]
     ys = [d["p50"], d["p95"], d["p99"], d["p999"]]
-    ax_full.plot(pct_vals, ys, marker="o", label=label,
+    ax_full.plot(pct_x, ys, marker="o", label=label,
                  color=COLORS[impl], linewidth=1.8, markersize=5)
 
 ax_full.set_xlabel("Percentile")
 ax_full.set_ylabel("Latency (ns)")
 ax_full.set_title("Full Percentile Range")
 ax_full.legend(fontsize=8, loc="upper left")
-ax_full.set_xticks(pct_vals)
+ax_full.set_xticks(pct_x)
 ax_full.set_xticklabels(pct_label)
 
 for impl, label in zip(IMPLS, LEG_LABELS):
@@ -455,7 +455,7 @@ ax_tail.set_yscale("log")
 ax_tail.set_title("Tail Latency (p95 to p99.9, log scale)")
 ax_tail.legend(fontsize=8, loc="upper left")
 ax_tail.set_xticks([95, 99, 99.9])
-ax_tail.set_xticklabels(["p95", "p99", "p99.9"])
+ax_tail.set_xticklabels(["p95", "p99", "p99.9"], fontweight="normal")
 
 fig.suptitle(
     "Lookup latency percentiles, miss workload (RDTSC, 2M samples, 500K warmup)",

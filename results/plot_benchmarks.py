@@ -281,7 +281,7 @@ add_sig_bracket(ax_zoom, 0, 2, y0 + 6.0,  p_tp_pr, label_offset=0.3)
 add_sig_bracket(ax_zoom, 1, 2, y0 + 12.0, p_na_pr, label_offset=0.3)
 
 fig.suptitle(
-    "Figure 1 -- Miss-Query Lookup Latency (Google Benchmark, n=5 reps, "
+    "Figure 1: Miss-Query Lookup Latency (Google Benchmark, n=5 reps, "
     "14,344,391 entries, error bars = 95% CI)",
     fontsize=9, y=1.02)
 plt.tight_layout()
@@ -313,7 +313,7 @@ for wi, (wk, wl) in enumerate(zip(workload_keys, workload_display)):
 ax.set_ylabel("Latency (ns/op)")
 ax.set_xticks(x)
 ax.set_xticklabels(AXIS_LABELS, fontsize=9)
-ax.set_title("Figure 2 -- Lookup Latency by Workload (Google Benchmark, n=5, error bars = 95% CI)")
+ax.set_title("Figure 2: Lookup Latency by Workload (Google Benchmark, n=5, error bars = 95% CI)")
 ax.legend(loc="upper left", framealpha=0.9)
 y_max = max(gbench["hit"]["stdmap"]["mean"], gbench["miss"]["stdmap"]["mean"])
 ax.set_ylim(0, y_max * 1.3)
@@ -354,7 +354,7 @@ for ax, (key, title, ylabel) in zip(axes, metrics):
     ax.set_ylim(0, max(vals) * 1.2)
 
 fig.suptitle(
-    "Figure 3 -- Cache Hierarchy Counters (perf stat, avg of 3 runs, "
+    "Figure 3: Cache Hierarchy Counters (perf stat, avg of 3 runs, "
     "2,000,000 miss queries, full RockYou)",
     fontsize=9, y=1.02)
 plt.tight_layout()
@@ -389,7 +389,7 @@ for bar, v in zip(b2, bmiss_vals):
     ax2.text(bar.get_x() + bar.get_width() / 2, v + max(bmiss_vals) * 0.025,
              f"{v:.4f}", ha="center", va="bottom", fontsize=8.5)
 
-fig.suptitle("Figure 4 -- CPU Execution Efficiency (perf stat, avg of 3 runs, 2M lookups)",
+fig.suptitle("Figure 4: CPU Execution Efficiency (perf stat, avg of 3 runs, 2M lookups)",
              fontsize=9, y=1.02)
 plt.tight_layout()
 save(fig, "fig4_ipc_branch")
@@ -431,7 +431,7 @@ ax_tail.set_xticks([95, 99, 99.9])
 ax_tail.set_xticklabels(["p95", "p99", "p99.9"])
 
 fig.suptitle(
-    "Figure 5 -- Latency Percentiles (RDTSC, 2M samples, 500K warmup, miss workload, "
+    "Figure 5: Latency Percentiles (RDTSC, 2M samples, 500K warmup, miss workload, "
     "overhead-subtracted)",
     fontsize=9, y=1.02)
 plt.tight_layout()
@@ -453,7 +453,7 @@ for impl, label in zip(IMPLS, LEG_LABELS):
 
 ax.set_xlabel("Thread count")
 ax.set_ylabel("Throughput (MH/s)")
-ax.set_title("Figure 6 -- Cracker Throughput Scaling\n(3 runs per cell, error bars = stddev)")
+ax.set_title("Figure 6: Cracker Throughput Scaling\n(3 runs per cell, error bars = stddev)")
 ax.set_xticks(threads)
 ax.legend(loc="upper left", ncol=1, fontsize=8)
 ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))
@@ -484,7 +484,7 @@ for i, (bar, m, s) in enumerate(zip(bars, hf_means, hf_stds)):
 ax.set_ylabel("Wall-clock time (s)")
 ax.set_xticks(x)
 ax.set_xticklabels(AXIS_LABELS, fontsize=9)
-ax.set_title("Figure 7 -- End-to-End Crack Time\n(hyperfine, 5 runs, 2 warmups, 4 threads, entry ~7M)")
+ax.set_title("Figure 7: End-to-End Crack Time\n(hyperfine, 5 runs, 2 warmups, 4 threads, entry ~7M)")
 ax.set_ylim(0, max(hf_maxs) * 1.3)
 ax.legend(fontsize=8)
 plt.tight_layout()
@@ -503,7 +503,7 @@ for bar, v in zip(bars, mem_mb):
 ax.set_ylabel("Peak RSS (MiB)")
 ax.set_xticks(x)
 ax.set_xticklabels(AXIS_LABELS, fontsize=9)
-ax.set_title("Figure 8 -- Peak Memory Usage\n(/usr/bin/time -v, 14,344,391 entries loaded)")
+ax.set_title("Figure 8: Peak Memory Usage\n(/usr/bin/time -v, 14,344,391 entries loaded)")
 ax.set_ylim(0, max(mem_mb) * 1.2)
 plt.tight_layout()
 save(fig, "fig8_memory")

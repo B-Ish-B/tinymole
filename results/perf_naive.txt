@@ -1,141 +1,71 @@
-=== perf stat: naive (7 runs) ===
+=== lookup-only counters: naive (7 runs) ===
 --- run 1 ---
+PERF: cache_misses = 10203535
+PERF: cache_refs = 11774155
+PERF: instructions = 128077905
+PERF: cycles = 322851924
+PERF: branch_misses = 1780621
+PERF: dtlb_misses = 1982220
+PERF: l1d_replacement = 7404595
 naive lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_naive':
-
-        88,017,871      cache-misses:u                                                        
-       101,788,373      cache-references:u                                                    
-    56,173,208,067      instructions:u                                                        
-    27,612,758,333      cycles:u                                                              
-        23,673,098      branch-misses:u                                                       
-         5,264,471      dtlb-load-misses:u                                                    
-        59,965,315      l1d.replacement:u                                                     
-
-       7.901900747 seconds time elapsed
-
-       7.542840000 seconds user
-       0.301330000 seconds sys
-
-
 
 --- run 2 ---
+PERF: cache_misses = 10862885
+PERF: cache_refs = 12315326
+PERF: instructions = 128077922
+PERF: cycles = 313573417
+PERF: branch_misses = 1777811
+PERF: dtlb_misses = 1981854
+PERF: l1d_replacement = 7420091
 naive lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_naive':
-
-        88,782,217      cache-misses:u                                                        
-       101,333,690      cache-references:u                                                    
-    56,173,208,435      instructions:u                                                        
-    28,158,049,527      cycles:u                                                              
-        23,630,655      branch-misses:u                                                       
-         5,168,288      dtlb-load-misses:u                                                    
-        60,337,145      l1d.replacement:u                                                     
-
-       7.945987838 seconds time elapsed
-
-       7.611273000 seconds user
-       0.290425000 seconds sys
-
-
 
 --- run 3 ---
+PERF: cache_misses = 10066692
+PERF: cache_refs = 11483150
+PERF: instructions = 128077914
+PERF: cycles = 346970689
+PERF: branch_misses = 1780644
+PERF: dtlb_misses = 1982403
+PERF: l1d_replacement = 7365815
 naive lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_naive':
-
-        87,829,860      cache-misses:u                                                        
-       100,794,306      cache-references:u                                                    
-    56,173,208,369      instructions:u                                                        
-    28,375,981,896      cycles:u                                                              
-        23,561,306      branch-misses:u                                                       
-         5,286,966      dtlb-load-misses:u                                                    
-        59,874,091      l1d.replacement:u                                                     
-
-       8.020306331 seconds time elapsed
-
-       7.666096000 seconds user
-       0.311280000 seconds sys
-
-
 
 --- run 4 ---
+PERF: cache_misses = 10817463
+PERF: cache_refs = 12489548
+PERF: instructions = 128077901
+PERF: cycles = 293895294
+PERF: branch_misses = 1773571
+PERF: dtlb_misses = 1981061
+PERF: l1d_replacement = 7423714
 naive lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_naive':
-
-        88,733,494      cache-misses:u                                                        
-       101,413,835      cache-references:u                                                    
-    56,173,208,810      instructions:u                                                        
-    28,579,041,868      cycles:u                                                              
-        23,661,920      branch-misses:u                                                       
-         5,299,849      dtlb-load-misses:u                                                    
-        60,437,749      l1d.replacement:u                                                     
-
-       7.695241803 seconds time elapsed
-
-       7.327618000 seconds user
-       0.294464000 seconds sys
-
-
 
 --- run 5 ---
+PERF: cache_misses = 8702576
+PERF: cache_refs = 9887587
+PERF: instructions = 128077958
+PERF: cycles = 397314799
+PERF: branch_misses = 1779508
+PERF: dtlb_misses = 1984628
+PERF: l1d_replacement = 7317337
 naive lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_naive':
-
-        77,453,091      cache-misses:u                                                        
-        88,623,440      cache-references:u                                                    
-    56,173,211,701      instructions:u                                                        
-    32,863,881,774      cycles:u                                                              
-        23,631,059      branch-misses:u                                                       
-         6,196,330      dtlb-load-misses:u                                                    
-        63,573,904      l1d.replacement:u                                                     
-
-       9.849311177 seconds time elapsed
-
-       9.252358000 seconds user
-       0.349664000 seconds sys
-
-
 
 --- run 6 ---
+PERF: cache_misses = 10624588
+PERF: cache_refs = 12197855
+PERF: instructions = 128077904
+PERF: cycles = 314382975
+PERF: branch_misses = 1775863
+PERF: dtlb_misses = 1981963
+PERF: l1d_replacement = 7415618
 naive lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_naive':
-
-        83,119,408      cache-misses:u                                                        
-        94,352,767      cache-references:u                                                    
-    56,173,210,252      instructions:u                                                        
-    30,623,825,708      cycles:u                                                              
-        23,677,794      branch-misses:u                                                       
-         5,808,437      dtlb-load-misses:u                                                    
-        62,206,048      l1d.replacement:u                                                     
-
-       9.144802805 seconds time elapsed
-
-       8.579919000 seconds user
-       0.384859000 seconds sys
-
-
 
 --- run 7 ---
+PERF: cache_misses = 10622189
+PERF: cache_refs = 12138985
+PERF: instructions = 128077923
+PERF: cycles = 316763595
+PERF: branch_misses = 1774790
+PERF: dtlb_misses = 1981993
+PERF: l1d_replacement = 7405281
 naive lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_naive':
-
-        89,421,136      cache-misses:u                                                        
-       102,277,574      cache-references:u                                                    
-    56,173,208,917      instructions:u                                                        
-    28,232,688,379      cycles:u                                                              
-        23,625,360      branch-misses:u                                                       
-         5,247,340      dtlb-load-misses:u                                                    
-        60,058,047      l1d.replacement:u                                                     
-
-       7.410851580 seconds time elapsed
-
-       7.037106000 seconds user
-       0.295963000 seconds sys
-
-
 

@@ -15,6 +15,7 @@
 
 #include "src/cpp/tiny_ptr.hpp"
 #include "src/cpp/hash_table_naive.hpp"
+#include "src/cpp/perf_counters.hpp"
 
 static constexpr size_t N_QUERIES  = 2000000;
 static const char*      WORDLIST   = "data/rockyou.txt";
@@ -38,12 +39,17 @@ int main() {
         queries.push_back(h);
     }
 
+    PerfCounters perf(standard_events());
+
     volatile size_t sink = 0;
+    perf.reset_and_start();
     for (size_t i = 0; i < N_QUERIES; ++i) {
         auto r = table.lookup(queries[i].data(), pool.base());
         sink += r.size();
     }
+    perf.stop();
 
+    perf.print();
     std::printf("naive lookups done (sink=%zu)\n", (size_t)sink);
     return 0;
 }

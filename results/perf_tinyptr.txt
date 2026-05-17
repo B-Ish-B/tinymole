@@ -1,141 +1,71 @@
-=== perf stat: tinyptr (7 runs) ===
+=== lookup-only counters: tinyptr (7 runs) ===
 --- run 1 ---
+PERF: cache_misses = 11010673
+PERF: cache_refs = 12711781
+PERF: instructions = 128077897
+PERF: cycles = 295651873
+PERF: branch_misses = 1772356
+PERF: dtlb_misses = 1981724
+PERF: l1d_replacement = 7457975
 tiny_ptr lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
-
-        83,328,793      cache-misses:u                                                        
-        98,166,877      cache-references:u                                                    
-    56,046,794,513      instructions:u                                                        
-    27,481,482,281      cycles:u                                                              
-        23,880,010      branch-misses:u                                                       
-         6,976,499      dtlb-load-misses:u                                                    
-        59,138,019      l1d.replacement:u                                                     
-
-       7.285774510 seconds time elapsed
-
-       6.871694000 seconds user
-       0.333846000 seconds sys
-
-
 
 --- run 2 ---
+PERF: cache_misses = 10462127
+PERF: cache_refs = 12131061
+PERF: instructions = 128077902
+PERF: cycles = 316751176
+PERF: branch_misses = 1775519
+PERF: dtlb_misses = 1981754
+PERF: l1d_replacement = 7426696
 tiny_ptr lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
-
-        86,735,717      cache-misses:u                                                        
-       100,848,021      cache-references:u                                                    
-    56,046,794,376      instructions:u                                                        
-    27,557,094,365      cycles:u                                                              
-        23,865,307      branch-misses:u                                                       
-         5,859,310      dtlb-load-misses:u                                                    
-        59,680,416      l1d.replacement:u                                                     
-
-       7.163645391 seconds time elapsed
-
-       6.831480000 seconds user
-       0.302717000 seconds sys
-
-
 
 --- run 3 ---
+PERF: cache_misses = 11060043
+PERF: cache_refs = 12693127
+PERF: instructions = 128077907
+PERF: cycles = 301832223
+PERF: branch_misses = 1780805
+PERF: dtlb_misses = 1981496
+PERF: l1d_replacement = 7425925
 tiny_ptr lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
-
-        86,405,999      cache-misses:u                                                        
-       101,084,164      cache-references:u                                                    
-    56,046,795,525      instructions:u                                                        
-    26,633,737,691      cycles:u                                                              
-        23,939,123      branch-misses:u                                                       
-         6,192,994      dtlb-load-misses:u                                                    
-        59,031,107      l1d.replacement:u                                                     
-
-       7.093678503 seconds time elapsed
-
-       6.780822000 seconds user
-       0.285750000 seconds sys
-
-
 
 --- run 4 ---
+PERF: cache_misses = 10715662
+PERF: cache_refs = 12382768
+PERF: instructions = 128077904
+PERF: cycles = 304958397
+PERF: branch_misses = 1780798
+PERF: dtlb_misses = 1981514
+PERF: l1d_replacement = 7414429
 tiny_ptr lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
-
-        85,654,892      cache-misses:u                                                        
-       100,705,428      cache-references:u                                                    
-    56,046,794,346      instructions:u                                                        
-    27,087,087,306      cycles:u                                                              
-        23,952,486      branch-misses:u                                                       
-         6,200,879      dtlb-load-misses:u                                                    
-        59,636,921      l1d.replacement:u                                                     
-
-       7.137416923 seconds time elapsed
-
-       6.786254000 seconds user
-       0.305483000 seconds sys
-
-
 
 --- run 5 ---
+PERF: cache_misses = 11126650
+PERF: cache_refs = 12796517
+PERF: instructions = 128077898
+PERF: cycles = 295231709
+PERF: branch_misses = 1778001
+PERF: dtlb_misses = 1981322
+PERF: l1d_replacement = 7469792
 tiny_ptr lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
-
-        85,137,109      cache-misses:u                                                        
-       100,096,925      cache-references:u                                                    
-    56,046,795,833      instructions:u                                                        
-    26,880,981,616      cycles:u                                                              
-        23,988,117      branch-misses:u                                                       
-         6,313,581      dtlb-load-misses:u                                                    
-        59,040,943      l1d.replacement:u                                                     
-
-       7.676104426 seconds time elapsed
-
-       7.313282000 seconds user
-       0.327205000 seconds sys
-
-
 
 --- run 6 ---
+PERF: cache_misses = 10715225
+PERF: cache_refs = 12328228
+PERF: instructions = 128077903
+PERF: cycles = 314661636
+PERF: branch_misses = 1777234
+PERF: dtlb_misses = 1981938
+PERF: l1d_replacement = 7428100
 tiny_ptr lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
-
-        86,640,002      cache-misses:u                                                        
-       101,349,822      cache-references:u                                                    
-    56,046,793,919      instructions:u                                                        
-    26,622,941,855      cycles:u                                                              
-        24,004,504      branch-misses:u                                                       
-         6,180,065      dtlb-load-misses:u                                                    
-        59,062,417      l1d.replacement:u                                                     
-
-       6.815877084 seconds time elapsed
-
-       6.490665000 seconds user
-       0.296651000 seconds sys
-
-
 
 --- run 7 ---
+PERF: cache_misses = 9779956
+PERF: cache_refs = 11148309
+PERF: instructions = 128077930
+PERF: cycles = 382677963
+PERF: branch_misses = 1778569
+PERF: dtlb_misses = 1984113
+PERF: l1d_replacement = 7358659
 tiny_ptr lookups done (sink=0)
-
- Performance counter stats for '/home/ish/Desktop/CSC-255/Final-Project/build/perf_tinyptr':
-
-        82,440,151      cache-misses:u                                                        
-        97,374,011      cache-references:u                                                    
-    56,046,794,319      instructions:u                                                        
-    26,801,363,508      cycles:u                                                              
-        23,957,321      branch-misses:u                                                       
-         7,337,349      dtlb-load-misses:u                                                    
-        57,545,081      l1d.replacement:u                                                     
-
-       6.892352077 seconds time elapsed
-
-       6.559941000 seconds user
-       0.303859000 seconds sys
-
-
 

@@ -2,8 +2,10 @@
  * @author Ismail Alwahsh
  * @since May 7, 2026
  * @description: Standalone perf runner for the tiny pointer hash table. Loads
- * a wordlist, runs 2M miss queries, and prints total lookup time to stdout.
- * Used with perf stat or perf record to get hardware counter data.
+ * a wordlist, runs 2M miss queries, and prints hardware counter values scoped
+ * to the lookup loop only (load and query-generation phases are excluded).
+ * Counters are collected via perf_event_open(2) and emitted as parseable
+ * `PERF: <name> = <value>` lines on stdout.
  */
 
 #include <openssl/evp.h>
@@ -15,6 +17,7 @@
 
 #include "src/cpp/tiny_ptr.hpp"
 #include "src/cpp/hash_table.hpp"
+#include "src/cpp/perf_counters.hpp"
 
 static constexpr size_t N_QUERIES  = 2000000;
 static const char*      WORDLIST   = "data/rockyou.txt";
@@ -38,12 +41,17 @@ int main() {
         queries.push_back(h);
     }
 
+    PerfCounters perf(standard_events());
+
     volatile size_t sink = 0;
+    perf.reset_and_start();
     for (size_t i = 0; i < N_QUERIES; ++i) {
         auto r = table.lookup(queries[i].data(), pool.base());
         sink += r.size();
     }
+    perf.stop();
 
+    perf.print();
     std::printf("tiny_ptr lookups done (sink=%zu)\n", (size_t)sink);
     return 0;
 }

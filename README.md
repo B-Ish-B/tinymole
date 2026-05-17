@@ -110,6 +110,7 @@ make crack HASH=<hex>   # uses candidates_ranked.txt automatically
 
 | Target | What it does |
 |---|---|
+| `make help` | List every target with a one-line description |
 | `make all` | Release build (`-O2`) |
 | `make test` | Build and run all unit tests |
 | `make bench` | Google Benchmark throughput (miss/hit/mixed, 5 reps) |

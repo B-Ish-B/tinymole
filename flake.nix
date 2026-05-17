@@ -29,6 +29,10 @@
             quill-log
           ] ++ linuxOnly;
 
+          # uv-installed numpy/matplotlib/scipy wheels are linked against the
+          # manylinux libstdc++; expose Nix's gcc libstdc++.so.6 so they load.
+          LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
+
           shellHook = ''
             echo "environment ready"
           '';

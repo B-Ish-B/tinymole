@@ -9,8 +9,8 @@
 Multithreaded dictionary password cracker comparing four hash table implementations under a realistic 14.3-million-entry RockYou workload. Built around a bit-packed pointer design derived from [Bender et al. (ACM ToA, 2024)](https://doi.org/10.1145/3700594).
 
 - Four hash table designs: bit-packed 32-bit pointer, naive 32-bit offset, 6-bit key-dependent (DEREFERENCE), and `std::unordered_map` baseline
-- Open addressing with linear probing; 96-bit truncated MD5 keys
-- Multi-threaded cracker with frequency-ranked candidate ordering
+- TinyPtr and Naive use flat linear probing; Prob uses linear probing within fixed-size buckets plus two-choice fallback to a secondary region
+- 96-bit truncated MD5 keys, multi-threaded cracker with frequency-ranked candidate ordering
 - Benchmarks: Google Benchmark, RDTSC percentiles, `perf_event_open` counters, `hyperfine` wall time
 
 ![TUI splash screen](docs/tui.png)
@@ -29,7 +29,7 @@ Benchmarked on an Intel i3-1115G4 (Tiger Lake, 2 cores / 4 threads, 4.1 GHz boos
 | std::unordered_map | 64-bit heap pointer | 305.9 | 392.5 | 17.2 s | 1912 |
 
 - All three custom tables beat `std::unordered_map` by **6.9x** on miss latency and **1.86x** end-to-end.
-- TinyPtr achieves **2.0x faster hit lookups** than Naive by encoding password length in the pointer, eliminating one dependent pool read.
+- TinyPtr achieves **2.0x faster hit lookups** than Naive by encoding password length in the pointer, eliminating one dependent pool read. (Microbenchmark times `string_view` construction; a client that reads the password contents still pays one pool cache-line miss.)
 - With perf counters scoped to the lookup loop alone, all three custom designs hit the same **~5.3 LLC misses per lookup**; StdMap doubles that at 10.9 due to pointer chasing.
 - Probabilistic 6-bit pointers are 1.25x slower end-to-end primarily because building the two-level table takes ~2.4 s longer; the lookup phase itself finishes within 0.15 s of TinyPtr at 4 threads.
 
@@ -37,7 +37,7 @@ Benchmarked on an Intel i3-1115G4 (Tiger Lake, 2 cores / 4 threads, 4.1 GHz boos
 
 ![Lookup latency by workload](results/figures/fig2_workload_comparison.png)
 
-Throughput saturates around 3.6-4.1 MH/s at 4 threads, which fully populates the 2 cores × 2 hyperthreads of the test machine (memory-subsystem bound, not CPU bound). Full analysis in [docs/write_up.md](docs/write_up.md).
+Throughput saturates around 3.4-3.7 MH/s at 4 threads, which fully populates the 2 cores × 2 hyperthreads of the test machine (memory-subsystem bound, not CPU bound). Full analysis in [docs/write_up.md](docs/write_up.md).
 
 ---
 

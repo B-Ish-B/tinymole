@@ -25,9 +25,9 @@
 #include "quill/sinks/ConsoleSink.h"
 #include "quill/sinks/FileSink.h"
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table.hpp"
-#include "src/cpp/cracker.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table.hpp"
+#include "src/cpp/cracker/cracker.hpp"
 
 static void usage(const char* prog) {
     std::fprintf(stderr,

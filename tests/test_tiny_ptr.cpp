@@ -7,7 +7,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "src/cpp/tiny_ptr.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
 
 TEST(TinyPtr, RoundTripMinValues) {
     uint32_t tp = encode_tiny_ptr(0, 1);

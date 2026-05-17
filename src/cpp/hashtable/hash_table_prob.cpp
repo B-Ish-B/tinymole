@@ -5,8 +5,8 @@
  * See hash_table_prob.hpp for the design overview.
  */
 
-#include "src/cpp/hash_table_prob.hpp"
-#include "src/cpp/ht_ops.hpp"
+#include "src/cpp/hashtable/hash_table_prob.hpp"
+#include "src/cpp/hashtable/ht_ops.hpp"
 
 #include <chrono>
 #include <cstring>

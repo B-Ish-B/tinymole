@@ -37,30 +37,30 @@ build/test_tiny_ptr: tests/test_tiny_ptr.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $< -o $@ -lgtest -lgtest_main -lpthread
 
-build/test_hash_table: tests/test_hash_table.cpp src/cpp/hash_table.cpp
+build/test_hash_table: tests/test_hash_table.cpp src/cpp/hashtable/hash_table.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
-build/test_hash_table_naive: tests/test_hash_table_naive.cpp src/cpp/hash_table_naive.cpp
+build/test_hash_table_naive: tests/test_hash_table_naive.cpp src/cpp/hashtable/hash_table_naive.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
-build/test_hash_table_stdmap: tests/test_hash_table_stdmap.cpp src/cpp/hash_table_stdmap.cpp
+build/test_hash_table_stdmap: tests/test_hash_table_stdmap.cpp src/cpp/hashtable/hash_table_stdmap.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
-build/test_hash_table_prob: tests/test_hash_table_prob.cpp src/cpp/hash_table_prob.cpp
+build/test_hash_table_prob: tests/test_hash_table_prob.cpp src/cpp/hashtable/hash_table_prob.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
-build/test_cracker: tests/test_cracker.cpp src/cpp/cracker.cpp src/cpp/hash_table.cpp
+build/test_cracker: tests/test_cracker.cpp src/cpp/cracker/cracker.cpp src/cpp/hashtable/hash_table.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
-CRACKER_SRCS      = src/cpp/main.cpp src/cpp/cracker.cpp src/cpp/hash_table.cpp
-BENCH_CRACKER_SRCS = src/cpp/bench_cracker.cpp src/cpp/cracker.cpp \
-                     src/cpp/hash_table.cpp src/cpp/hash_table_naive.cpp \
-                     src/cpp/hash_table_stdmap.cpp src/cpp/hash_table_prob.cpp
+CRACKER_SRCS      = src/cpp/cracker/main.cpp src/cpp/cracker/cracker.cpp src/cpp/hashtable/hash_table.cpp
+BENCH_CRACKER_SRCS = src/cpp/bench/bench_cracker.cpp src/cpp/cracker/cracker.cpp \
+                     src/cpp/hashtable/hash_table.cpp src/cpp/hashtable/hash_table_naive.cpp \
+                     src/cpp/hashtable/hash_table_stdmap.cpp src/cpp/hashtable/hash_table_prob.cpp
 
 build/cracker: $(CRACKER_SRCS)
 	mkdir -p build logs
@@ -101,29 +101,29 @@ hyperfine: build/bench_cracker  ## End-to-end wall-clock timing with hyperfine (
 	  "build/bench_cracker --impl prob    --hash $(BENCH_HASH) --threads $(BENCH_THREADS)"
 	@echo "Results written to results/hyperfine.csv and results/hyperfine.md"
 
-build/bench_lookup: src/cpp/bench_lookup.cpp src/cpp/hash_table.cpp src/cpp/hash_table_naive.cpp src/cpp/hash_table_stdmap.cpp src/cpp/hash_table_prob.cpp
+build/bench_lookup: src/cpp/bench/bench_lookup.cpp src/cpp/hashtable/hash_table.cpp src/cpp/hashtable/hash_table_naive.cpp src/cpp/hashtable/hash_table_stdmap.cpp src/cpp/hashtable/hash_table_prob.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS) -lbenchmark -lbenchmark_main
 
-build/perf_tinyptr: src/cpp/perf_tinyptr.cpp src/cpp/hash_table.cpp
+build/perf_tinyptr: src/cpp/bench/perf_tinyptr.cpp src/cpp/hashtable/hash_table.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
-build/perf_naive: src/cpp/perf_naive.cpp src/cpp/hash_table_naive.cpp
+build/perf_naive: src/cpp/bench/perf_naive.cpp src/cpp/hashtable/hash_table_naive.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
-build/perf_stdmap: src/cpp/perf_stdmap.cpp src/cpp/hash_table_stdmap.cpp
+build/perf_stdmap: src/cpp/bench/perf_stdmap.cpp src/cpp/hashtable/hash_table_stdmap.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
-build/perf_prob: src/cpp/perf_prob.cpp src/cpp/hash_table_prob.cpp
+build/perf_prob: src/cpp/bench/perf_prob.cpp src/cpp/hashtable/hash_table_prob.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
-build/bench_latency: src/cpp/bench_latency.cpp src/cpp/hash_table.cpp \
-                     src/cpp/hash_table_naive.cpp src/cpp/hash_table_stdmap.cpp \
-                     src/cpp/hash_table_prob.cpp
+build/bench_latency: src/cpp/bench/bench_latency.cpp src/cpp/hashtable/hash_table.cpp \
+                     src/cpp/hashtable/hash_table_naive.cpp src/cpp/hashtable/hash_table_stdmap.cpp \
+                     src/cpp/hashtable/hash_table_prob.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 

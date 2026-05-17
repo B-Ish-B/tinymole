@@ -12,9 +12,9 @@
 #include <string>
 #include <vector>
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table.hpp"
-#include "src/cpp/cracker.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table.hpp"
+#include "src/cpp/cracker/cracker.hpp"
 
 static void md5_of(const std::string& s, uint8_t out[16]) {
     unsigned int len = 16;

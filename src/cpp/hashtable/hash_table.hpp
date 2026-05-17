@@ -17,8 +17,8 @@
 #include <string_view>
 #include <vector>
 #include "quill/Logger.h"
-#include "src/cpp/build_stats.hpp"
-#include "src/cpp/tiny_ptr.hpp"
+#include "src/cpp/hashtable/build_stats.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
 
 struct Slot {
     uint8_t  key[12];    // 96-bit truncated key; collision prob ~n^2/2^96, negligible at 14M entries

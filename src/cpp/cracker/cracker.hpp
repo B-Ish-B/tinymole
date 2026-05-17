@@ -22,7 +22,7 @@
 #include "quill/Backend.h"
 #include "quill/LogMacros.h"
 #include "quill/Logger.h"
-#include "src/cpp/tiny_ptr.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
 
 #define CLOG_INFO(logger, ...)  do { if (logger) { LOG_INFO(logger,  __VA_ARGS__); } } while(0)
 #define CLOG_DEBUG(logger, ...) do { if (logger) { LOG_DEBUG(logger, __VA_ARGS__); } } while(0)

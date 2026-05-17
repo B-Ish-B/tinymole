@@ -12,7 +12,7 @@
 #include <sstream>
 #include <string>
 
-#include "src/cpp/hash_table_stdmap.hpp"
+#include "src/cpp/hashtable/hash_table_stdmap.hpp"
 
 static void md5_of(const std::string& s, uint8_t out[16]) {
     unsigned int len = 16;

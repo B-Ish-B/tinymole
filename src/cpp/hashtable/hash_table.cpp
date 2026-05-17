@@ -6,8 +6,8 @@
  * (too long, empty, null byte, duplicate) through BuildStats for logging.
  */
 
-#include "src/cpp/hash_table.hpp"
-#include "src/cpp/ht_ops.hpp"
+#include "src/cpp/hashtable/hash_table.hpp"
+#include "src/cpp/hashtable/ht_ops.hpp"
 
 #include <chrono>
 #include <cstring>

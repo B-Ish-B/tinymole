@@ -7,8 +7,8 @@
  * how much the pointer compression saves in cache pressure.
  */
 
-#include "src/cpp/hash_table_naive.hpp"
-#include "src/cpp/ht_ops.hpp"
+#include "src/cpp/hashtable/hash_table_naive.hpp"
+#include "src/cpp/hashtable/ht_ops.hpp"
 
 #include <chrono>
 #include <cstring>

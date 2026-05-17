@@ -6,7 +6,7 @@
  * every frequency rank rather than one thread getting all the top candidates.
  */
 
-#include "src/cpp/cracker.hpp"
+#include "src/cpp/cracker/cracker.hpp"
 
 std::vector<std::vector<std::string>> partition_candidates(
     const std::vector<std::string>& candidates,

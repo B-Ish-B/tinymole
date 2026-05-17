@@ -1,11 +1,9 @@
 /*
  * @author Ismail Alwahsh
  * @since May 7, 2026
- * @description: Standalone perf runner for the tiny pointer hash table. Loads
- * a wordlist, runs 2M miss queries, and prints hardware counter values scoped
- * to the lookup loop only (load and query-generation phases are excluded).
- * Counters are collected via perf_event_open(2) and emitted as parseable
- * `PERF: <name> = <value>` lines on stdout.
+ * @description: Standalone perf runner for the naive open-addressed hash table.
+ * Same workload as perf_tinyptr for direct comparison. Use with perf stat to
+ * collect cache miss counts and compare against the tiny pointer variant.
  */
 
 #include <openssl/evp.h>
@@ -15,16 +13,16 @@
 #include <array>
 #include <cstdio>
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table.hpp"
-#include "src/cpp/perf_counters.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table_naive.hpp"
+#include "src/cpp/bench/perf_counters.hpp"
 
 static constexpr size_t N_QUERIES  = 2000000;
 static const char*      WORDLIST   = "data/rockyou.txt";
 
 int main() {
-    PasswordPool pool;
-    HashTable    table;
+    PasswordPool   pool;
+    HashTableNaive table;
 
     {
         std::ifstream f(WORDLIST);
@@ -52,6 +50,6 @@ int main() {
     perf.stop();
 
     perf.print();
-    std::printf("tiny_ptr lookups done (sink=%zu)\n", (size_t)sink);
+    std::printf("naive lookups done (sink=%zu)\n", (size_t)sink);
     return 0;
 }

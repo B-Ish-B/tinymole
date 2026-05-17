@@ -20,11 +20,11 @@
 #include <string>
 #include <vector>
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table.hpp"
-#include "src/cpp/hash_table_naive.hpp"
-#include "src/cpp/hash_table_stdmap.hpp"
-#include "src/cpp/hash_table_prob.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table.hpp"
+#include "src/cpp/hashtable/hash_table_naive.hpp"
+#include "src/cpp/hashtable/hash_table_stdmap.hpp"
+#include "src/cpp/hashtable/hash_table_prob.hpp"
 
 static constexpr size_t N_WARMUP  =  500'000;
 static constexpr size_t N_SAMPLES = 2'000'000;

@@ -15,8 +15,8 @@
 #include <string_view>
 #include <unordered_map>
 #include "quill/Logger.h"
-#include "src/cpp/build_stats.hpp"
-#include "src/cpp/tiny_ptr.hpp"
+#include "src/cpp/hashtable/build_stats.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
 
 // Hash table backed by std::unordered_map<string, string>.
 // Node-based, heap-allocated per entry. No contiguous pool.

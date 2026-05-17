@@ -16,8 +16,8 @@
 #include <string_view>
 #include <vector>
 #include "quill/Logger.h"
-#include "src/cpp/build_stats.hpp"
-#include "src/cpp/tiny_ptr.hpp"
+#include "src/cpp/hashtable/build_stats.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
 
 // Open-addressed hash table using full pool offsets.
 // Slot layout: 12-byte truncated key + 4-byte offset = 16 bytes.

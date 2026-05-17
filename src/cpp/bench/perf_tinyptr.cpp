@@ -1,9 +1,11 @@
 /*
  * @author Ismail Alwahsh
- * @since May 15, 2026
- * Standalone perf runner for the probabilistic tiny pointer hash table.
- * Same workload as perf_tinyptr, perf_naive, and perf_stdmap. Use with
- * perf stat to collect cache miss counts for the fourth data point.
+ * @since May 7, 2026
+ * @description: Standalone perf runner for the tiny pointer hash table. Loads
+ * a wordlist, runs 2M miss queries, and prints hardware counter values scoped
+ * to the lookup loop only (load and query-generation phases are excluded).
+ * Counters are collected via perf_event_open(2) and emitted as parseable
+ * `PERF: <name> = <value>` lines on stdout.
  */
 
 #include <openssl/evp.h>
@@ -13,18 +15,20 @@
 #include <array>
 #include <cstdio>
 
-#include "src/cpp/hash_table_prob.hpp"
-#include "src/cpp/perf_counters.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table.hpp"
+#include "src/cpp/bench/perf_counters.hpp"
 
 static constexpr size_t N_QUERIES  = 2000000;
 static const char*      WORDLIST   = "data/rockyou.txt";
 
 int main() {
-    HashTableProb table;
+    PasswordPool pool;
+    HashTable    table;
 
     {
         std::ifstream f(WORDLIST);
-        table.load(f);
+        table.load(f, pool);
     }
 
     std::vector<std::array<uint8_t, 16>> queries;
@@ -42,12 +46,12 @@ int main() {
     volatile size_t sink = 0;
     perf.reset_and_start();
     for (size_t i = 0; i < N_QUERIES; ++i) {
-        auto r = table.lookup(queries[i].data());
+        auto r = table.lookup(queries[i].data(), pool.base());
         sink += r.size();
     }
     perf.stop();
 
     perf.print();
-    std::printf("prob lookups done (sink=%zu)\n", (size_t)sink);
+    std::printf("tiny_ptr lookups done (sink=%zu)\n", (size_t)sink);
     return 0;
 }

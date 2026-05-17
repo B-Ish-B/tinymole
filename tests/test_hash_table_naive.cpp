@@ -11,8 +11,8 @@
 #include <sstream>
 #include <string>
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table_naive.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table_naive.hpp"
 
 static void md5_of(const std::string& s, uint8_t out[16]) {
     unsigned int len = 16;

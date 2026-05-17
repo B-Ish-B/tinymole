@@ -7,7 +7,7 @@
  * fragmentation versus the contiguous open-addressed pool tables.
  */
 
-#include "src/cpp/hash_table_stdmap.hpp"
+#include "src/cpp/hashtable/hash_table_stdmap.hpp"
 
 #include <chrono>
 #include <cstring>

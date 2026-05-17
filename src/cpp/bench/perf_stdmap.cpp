@@ -1,9 +1,9 @@
 /*
  * @author Ismail Alwahsh
  * @since May 7, 2026
- * @description: Standalone perf runner for the naive open-addressed hash table.
- * Same workload as perf_tinyptr for direct comparison. Use with perf stat to
- * collect cache miss counts and compare against the tiny pointer variant.
+ * @description: Standalone perf runner for the std::unordered_map hash table.
+ * Same workload as perf_tinyptr and perf_naive. Provides the third data point
+ * for the cache miss comparison across all three implementations.
  */
 
 #include <openssl/evp.h>
@@ -13,20 +13,19 @@
 #include <array>
 #include <cstdio>
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table_naive.hpp"
-#include "src/cpp/perf_counters.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table_stdmap.hpp"
+#include "src/cpp/bench/perf_counters.hpp"
 
 static constexpr size_t N_QUERIES  = 2000000;
 static const char*      WORDLIST   = "data/rockyou.txt";
 
 int main() {
-    PasswordPool   pool;
-    HashTableNaive table;
+    HashTableStdMap table;
 
     {
         std::ifstream f(WORDLIST);
-        table.load(f, pool);
+        table.load(f);
     }
 
     std::vector<std::array<uint8_t, 16>> queries;
@@ -44,12 +43,12 @@ int main() {
     volatile size_t sink = 0;
     perf.reset_and_start();
     for (size_t i = 0; i < N_QUERIES; ++i) {
-        auto r = table.lookup(queries[i].data(), pool.base());
+        auto r = table.lookup(queries[i].data());
         sink += r.size();
     }
     perf.stop();
 
     perf.print();
-    std::printf("naive lookups done (sink=%zu)\n", (size_t)sink);
+    std::printf("stdmap lookups done (sink=%zu)\n", (size_t)sink);
     return 0;
 }

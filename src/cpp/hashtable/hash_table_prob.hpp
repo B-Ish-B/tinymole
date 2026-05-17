@@ -41,7 +41,7 @@
 #include <string_view>
 #include <vector>
 #include "quill/Logger.h"
-#include "src/cpp/build_stats.hpp"
+#include "src/cpp/hashtable/build_stats.hpp"
 
 static constexpr uint8_t  PROB_BUCKET_SIZE    = 16;  // slots per bucket (b from paper)
 static constexpr uint32_t PROB_POOL_SLOT_SIZE = 32;  // bytes per pool slot: 1 len + 31 data

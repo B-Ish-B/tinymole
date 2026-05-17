@@ -16,12 +16,12 @@
 
 #include <openssl/evp.h>
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table.hpp"
-#include "src/cpp/hash_table_naive.hpp"
-#include "src/cpp/hash_table_stdmap.hpp"
-#include "src/cpp/hash_table_prob.hpp"
-#include "src/cpp/cracker.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table.hpp"
+#include "src/cpp/hashtable/hash_table_naive.hpp"
+#include "src/cpp/hashtable/hash_table_stdmap.hpp"
+#include "src/cpp/hashtable/hash_table_prob.hpp"
+#include "src/cpp/cracker/cracker.hpp"
 
 static std::vector<std::string> load_lines(const std::string& path) {
     std::vector<std::string> lines;

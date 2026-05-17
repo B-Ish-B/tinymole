@@ -18,11 +18,11 @@
 #include <string>
 #include <vector>
 
-#include "src/cpp/tiny_ptr.hpp"
-#include "src/cpp/hash_table.hpp"
-#include "src/cpp/hash_table_naive.hpp"
-#include "src/cpp/hash_table_stdmap.hpp"
-#include "src/cpp/hash_table_prob.hpp"
+#include "src/cpp/hashtable/tiny_ptr.hpp"
+#include "src/cpp/hashtable/hash_table.hpp"
+#include "src/cpp/hashtable/hash_table_naive.hpp"
+#include "src/cpp/hashtable/hash_table_stdmap.hpp"
+#include "src/cpp/hashtable/hash_table_prob.hpp"
 
 // ---------------------------------------------------------------------------
 // Shared setup: load the wordlist once, build miss queries.

@@ -19,7 +19,7 @@ Multithreaded dictionary password cracker comparing four hash table implementati
 
 ## Results
 
-Benchmarked on an Intel i3-1115G4 (Tiger Lake, 2 cores / 4 threads, 4.1 GHz boost, 6 MB L3) against all 14,344,391 RockYou entries. End-to-end times use 4 threads targeting a mid-list entry, mean of 5 hyperfine runs.
+Benchmarked on an Intel i3-1115G4 (Tiger Lake, 2 cores / 4 threads, 4.1 GHz boost, 6 MiB L3) against all 14,344,391 RockYou entries. End-to-end times use 4 threads targeting a mid-list entry, mean of 5 hyperfine runs.
 
 | Implementation | Pointer | Miss (ns) | Hit (ns) | End-to-end (4t) | Memory (MiB) |
 |---|---|---|---|---|---|

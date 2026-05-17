@@ -28,7 +28,8 @@ Benchmarked on an Intel i3-1115G4 (Tiger Lake, 2 cores / 4 threads, 4.1 GHz boos
 
 - All three custom tables beat `std::unordered_map` by **6.9x** on miss latency and **1.86x** end-to-end.
 - TinyPtr achieves **2.0x faster hit lookups** than Naive by encoding password length in the pointer, eliminating one dependent pool read.
-- Probabilistic 6-bit pointers incur **2.5x more LLC cache misses** due to fixed 32-byte pool slots, making Prob 1.25x slower end-to-end despite similar miss-path latency.
+- With perf counters scoped to the lookup loop alone, all three custom designs hit the same **~5.3 LLC misses per lookup**; StdMap doubles that at 10.9 due to pointer chasing.
+- Probabilistic 6-bit pointers are 1.25x slower end-to-end because their DEREFERENCE-based hit path is **2.4x slower** than TinyPtr's (33.4 vs 13.9 ns), not because of miss-phase cache pressure.
 
 ![End-to-end crack time](results/figures/fig7_walltime.png)
 

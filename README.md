@@ -1,5 +1,6 @@
 # tinymole
 
+[![CI](https://github.com/B-Ish-B/tinymole/actions/workflows/ci.yml/badge.svg)](https://github.com/B-Ish-B/tinymole/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![OpenSSL](https://img.shields.io/badge/crypto-OpenSSL%203.x-red?logo=openssl&logoColor=white)](https://www.openssl.org/)
 [![Nix](https://img.shields.io/badge/built%20with-Nix-5277C3?logo=nixos&logoColor=white)](flake.nix)

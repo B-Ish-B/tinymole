@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build and test (Nix)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Cache /nix/store
+        uses: cachix/cachix-action@v15
+        with:
+          name: nix-community
+        continue-on-error: true
+
+      - name: Build release cracker
+        run: nix develop --command make all
+
+      - name: Run C++ unit tests
+        run: nix develop --command make test
+
+      - name: Run Python unit tests
+        run: nix develop --command uv run pytest -v tests/
+
+      - name: Verify benchmark binaries build
+        run: |
+          nix develop --command make build/bench_lookup
+          nix develop --command make build/bench_latency
+          nix develop --command make build/bench_cracker
+          nix develop --command make build/perf_tinyptr
+          nix develop --command make build/perf_naive
+          nix develop --command make build/perf_prob
+          nix develop --command make build/perf_stdmap

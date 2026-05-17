@@ -22,7 +22,7 @@ Benchmarked on a 4-core Intel CPU (4.1 GHz, 6 MB L3) against all 14,344,391 Rock
 | Implementation | Pointer | Miss (ns) | Hit (ns) | End-to-end (4t) | Memory |
 |---|---|---|---|---|---|
 | TinyPtr (bit-packed) | 27-bit offset + 5-bit length | 44.5 | **13.9** | **9.2 s** | 680 MB |
-| Naive (full offset) | 32-bit raw offset | 42.7 | 27.7 | 10.3 s | 680 MB |
+| Naive (full offset) | 32-bit raw offset | **42.7** | 27.7 | 10.3 s | 680 MB |
 | Prob (key-dependent) | 6-bit DEREFERENCE | 43.8 | 33.4 | 11.5 s | 1194 MB |
 | std::unordered_map | 64-bit heap pointer | 305.9 | 392.5 | 17.2 s | 1912 MB |
 

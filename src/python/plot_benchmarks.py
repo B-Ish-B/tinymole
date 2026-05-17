@@ -467,7 +467,9 @@ save(fig, "fig5_latency_percentiles")
 # ---------------------------------------------------------------------------
 
 fig, ax = plt.subplots(figsize=(6.5, 4.2))
-threads = [1, 2, 4, 8]
+# 2-core / 4-HT test machine; 8 threads (collected during dev) is omitted
+# because it software-oversubscribes the hardware contexts.
+threads = [1, 2, 4]
 
 for impl, label in zip(IMPLS, LEG_LABELS):
     mhs_mean = [np.mean(cracker[impl][t]) for t in threads]

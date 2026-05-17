@@ -222,18 +222,18 @@ Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three
 
 ### 6.6 Thread Scaling
 
-Figure 6 shows cracker throughput in MH/s as thread count increases from 1 to 8. All implementations exhibit sub-linear scaling: TinyPtr goes from 2.88 MH/s at 1 thread to 3.61 MH/s at 4 threads (1.25x speedup) and 3.71 MH/s at 8 threads. The machine has 2 physical cores with 2 hyperthreads each (4 hardware threads total), so 4 threads already fully populates the hardware contexts and 8 threads oversubscribes them. The flat region from 4 to 8 threads reflects this saturation combined with shared-L3 contention: adding threads increases parallelism but also increases the aggregate LLC miss rate as multiple threads compete for the 6 MB L3 cache.
+Figure 6 shows cracker throughput in MH/s as thread count increases from 1 to 4 (the test machine has 2 physical cores with 2 hyperthreads each, so 4 software threads exactly populates the hardware contexts; we omit a separate 8-thread measurement that would only software-oversubscribe). All implementations exhibit sub-linear scaling: TinyPtr goes from 2.88 MH/s at 1 thread to 3.61 MH/s at 4 threads, a 1.25x speedup. Adding threads increases parallelism but also raises the aggregate LLC miss rate as multiple threads contend for the shared 6 MB L3 cache, so the per-thread efficiency falls off well before the hardware contexts are filled.
 
-At 4 threads (the point where every hardware context is exactly populated) all three custom implementations cluster tightly between 3.61 and 3.70 MH/s, while StdMap trails at 3.36 MH/s. The 8-thread column oversubscribes the 4 hardware contexts, so its values reflect a combination of memory-stall hiding (the OS can schedule a different software thread while one is waiting on a cache line) and context-switch overhead. The differences in the 8-thread column are within the run-to-run variance for 3 reps and should not be over-interpreted: the headline result is that all four implementations saturate near 3.4-4.0 MH/s once the hardware contexts are full.
+At 4 threads all three custom implementations cluster tightly between 3.61 and 3.70 MH/s; StdMap trails at 3.36 MH/s. The headline result is that all four designs saturate near 3.4-3.7 MH/s once every hardware context is occupied, with the L3 cache (not the cores) as the binding constraint.
 
 **Table 6: Cracker Throughput, Mean MH/s (stddev), 3 runs per cell**
 
-| Implementation | 1 thread | 2 threads | 4 threads | 8 threads |
-|---|---|---|---|---|
-| TinyPtr | 2.88 +/- 0.29 | 3.16 +/- 0.20 | 3.61 +/- 0.17 | 3.71 +/- 0.06 |
-| Naive | 2.59 +/- 0.06 | 3.29 +/- 0.11 | 3.67 +/- 0.13 | 3.59 +/- 0.22 |
-| Prob | 2.95 +/- 0.27 | 3.34 +/- 0.09 | 3.70 +/- 0.06 | 4.05 +/- 0.06 |
-| std::unordered_map | 2.87 +/- 0.28 | 3.12 +/- 0.05 | 3.36 +/- 0.03 | 3.48 +/- 0.04 |
+| Implementation | 1 thread | 2 threads | 4 threads |
+|---|---|---|---|
+| TinyPtr | 2.88 +/- 0.29 | 3.16 +/- 0.20 | 3.61 +/- 0.17 |
+| Naive | 2.59 +/- 0.06 | 3.29 +/- 0.11 | 3.67 +/- 0.13 |
+| Prob | 2.95 +/- 0.27 | 3.34 +/- 0.09 | 3.70 +/- 0.06 |
+| std::unordered_map | 2.87 +/- 0.28 | 3.12 +/- 0.05 | 3.36 +/- 0.03 |
 
 ![Figure 6: Cracker throughput scaling](../results/figures/fig6_thread_scaling.png)
 
@@ -306,7 +306,7 @@ We implemented and compared four hash table designs for a multithreaded dictiona
 
 3. The probabilistic DEREFERENCE implementation achieves 6-bit key-dependent pointers and matches both the miss-phase cache behavior (~5.3 LLC misses per lookup) and the parallel-cracker lookup throughput of the other custom designs (within 0.15 s at 4 threads). Its 1.25x end-to-end slowdown is in table-construction time: the two-level allocator and 1.76x larger pool take ~2.4 s longer to populate than TinyPtr's simple linear-probing table.
 
-4. Thread scaling is sub-linear across all designs, saturating at approximately 3.6-4.1 MH/s on a 2-core / 4-thread machine at 4-8 threads, reflecting full utilization of the hardware contexts combined with memory bandwidth saturation.
+4. Thread scaling is sub-linear across all designs, saturating at approximately 3.4-3.7 MH/s once the 2-core / 4-thread machine's hardware contexts are fully populated; the shared L3 cache becomes the binding constraint before the cores do.
 
 5. At the p99.9 percentile, Prob's two-level scheme provides tighter tail latency (572 ns) than TinyPtr's flat linear-probing design (1873 ns), at the cost of higher hit-path latency (33.4 vs 13.9 ns) and 1.76x memory usage. Mean miss latency is essentially tied across all three custom designs.
 

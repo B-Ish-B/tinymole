@@ -130,22 +130,9 @@ uv run python3 results/plot_benchmarks.py
 ## Tests
 
 ```bash
-make test        # C++ (Google Test)
-uv run pytest -v # Python
+make test        
+uv run pytest -v 
 ```
-
-Expected C++ output:
-
-```
-[  PASSED  ] 10 tests.   # tiny_ptr and PasswordPool
-[  PASSED  ] 13 tests.   # HashTable
-[  PASSED  ] 9 tests.    # HashTableNaive
-[  PASSED  ] 8 tests.    # HashTableStdMap
-[  PASSED  ] 11 tests.   # HashTableProb
-[  PASSED  ] 11 tests.   # cracker integration
-```
-
----
 
 ## References
 

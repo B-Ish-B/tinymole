@@ -175,7 +175,7 @@ latency = {
                 "p95": 868.271, "p99": 5079.521, "p999": 8490.309, "max": 45883.281},
 }
 
-# cracker_bench: 3 runs per impl/thread count, mid-list target (entry ~7M)
+# bench_cracker: 3 runs per impl/thread count, mid-list target (entry ~7M)
 cracker = {
     "tinyptr": {1: [3.06, 3.04, 2.53], 2: [3.21, 3.33, 2.94],
                 4: [3.61, 3.78, 3.44], 8: [3.67, 3.67, 3.78]},

@@ -128,7 +128,7 @@ Four benchmark types were used:
 
 **Hardware counters (perf_event_open):** Each implementation's standalone lookup binary (e.g., `build/perf_tinyptr`) uses the `perf_event_open(2)` syscall to open seven counters (LLC cache misses, cache references, instructions, cycles, branch misses, dTLB load misses, and L1d replacements) and brackets them with `PERF_EVENT_IOC_ENABLE`/`PERF_EVENT_IOC_DISABLE` around the 2-million-lookup loop. This excludes the table-load and query-generation phases from the measurement, so the resulting per-lookup rates reflect the lookup path alone rather than amortized whole-program costs. Each binary is run 7 times; per-metric values are aggregated by dropping the highest and lowest run and taking the trimmed mean of the remaining 5, with 95% confidence intervals from a t-distribution.
 
-**End-to-end wall time (hyperfine):** `build/cracker_bench` is run via hyperfine with 2 warmup runs, 5 timed runs, and 4 threads for each implementation, targeting the mid-list hash.
+**End-to-end wall time (hyperfine):** `build/bench_cracker` is run via hyperfine with 2 warmup runs, 5 timed runs, and 4 threads for each implementation, targeting the mid-list hash.
 
 ---
 
@@ -241,7 +241,7 @@ At 4 threads (the point where every hardware context is exactly populated) all t
 
 Table 8 reports hyperfine wall-clock timing for a 4-thread crack of the mid-list target. TinyPtr completes in 9.226 s (mean, +/- 0.518 s), the fastest of the four. Naive takes 10.317 s (1.12x), Prob 11.501 s (1.25x), and StdMap 17.177 s (1.86x).
 
-Subtracting the cracker_bench lookup-only timing (Table 6, mean of 3 runs at 4 threads) from the hyperfine end-to-end times isolates the table-construction cost (Table 7). All four implementations finish the lookup phase in essentially the same wall time (2.0-2.1 s; Prob is slightly faster due to its higher 4-thread MH/s). The end-to-end gaps map almost one-to-one onto load-time differences: Prob's two-level allocator (primary buckets plus two-choice secondary placement) and 1.76x larger pool take 2.4 s longer to populate, and StdMap's 14.3 million per-entry heap allocations add nearly 8 s. The structural advantage of the bit-packed TinyPtr design on this workload therefore shows up in build-time throughput, not in per-lookup speed during the parallel scan.
+Subtracting the bench_cracker lookup-only timing (Table 6, mean of 3 runs at 4 threads) from the hyperfine end-to-end times isolates the table-construction cost (Table 7). All four implementations finish the lookup phase in essentially the same wall time (2.0-2.1 s; Prob is slightly faster due to its higher 4-thread MH/s). The end-to-end gaps map almost one-to-one onto load-time differences: Prob's two-level allocator (primary buckets plus two-choice secondary placement) and 1.76x larger pool take 2.4 s longer to populate, and StdMap's 14.3 million per-entry heap allocations add nearly 8 s. The structural advantage of the bit-packed TinyPtr design on this workload therefore shows up in build-time throughput, not in per-lookup speed during the parallel scan.
 
 **Table 7: Load vs Lookup Decomposition (derived from Tables 6 and 8)**
 

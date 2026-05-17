@@ -58,7 +58,7 @@ build/test_cracker: tests/test_cracker.cpp src/cpp/cracker.cpp src/cpp/hash_tabl
 	$(CXX) $(CXXFLAGS_DEBUG) -I. $^ -o $@ -lgtest -lgtest_main -lpthread -lssl -lcrypto
 
 CRACKER_SRCS      = src/cpp/main.cpp src/cpp/cracker.cpp src/cpp/hash_table.cpp
-CRACKER_BENCH_SRCS = src/cpp/cracker_bench.cpp src/cpp/cracker.cpp \
+BENCH_CRACKER_SRCS = src/cpp/bench_cracker.cpp src/cpp/cracker.cpp \
                      src/cpp/hash_table.cpp src/cpp/hash_table_naive.cpp \
                      src/cpp/hash_table_stdmap.cpp src/cpp/hash_table_prob.cpp
 
@@ -74,7 +74,7 @@ build/cracker_tsan: $(CRACKER_SRCS)
 	mkdir -p build logs
 	$(CXX) $(CXXFLAGS_TSAN) -I. $^ -o $@ $(LDFLAGS)
 
-build/cracker_bench: $(CRACKER_BENCH_SRCS)
+build/bench_cracker: $(BENCH_CRACKER_SRCS)
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
@@ -88,17 +88,17 @@ bench: build/bench_lookup build/perf_tinyptr build/perf_naive build/perf_stdmap 
 	./build/bench_lookup --benchmark_repetitions=5 --benchmark_format=csv > results/benchmark.csv
 	@echo "Results written to results/benchmark.csv"
 
-hyperfine: build/cracker_bench  ## End-to-end wall-clock timing with hyperfine (5 runs, 2 warmups)
+hyperfine: build/bench_cracker  ## End-to-end wall-clock timing with hyperfine (5 runs, 2 warmups)
 	mkdir -p results
 	$(HYPERFINE) \
 	  --warmup 2 \
 	  --runs 5 \
 	  --export-csv results/hyperfine.csv \
 	  --export-markdown results/hyperfine.md \
-	  "build/cracker_bench --impl tinyptr --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
-	  "build/cracker_bench --impl naive   --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
-	  "build/cracker_bench --impl stdmap  --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
-	  "build/cracker_bench --impl prob    --hash $(BENCH_HASH) --threads $(BENCH_THREADS)"
+	  "build/bench_cracker --impl tinyptr --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
+	  "build/bench_cracker --impl naive   --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
+	  "build/bench_cracker --impl stdmap  --hash $(BENCH_HASH) --threads $(BENCH_THREADS)" \
+	  "build/bench_cracker --impl prob    --hash $(BENCH_HASH) --threads $(BENCH_THREADS)"
 	@echo "Results written to results/hyperfine.csv and results/hyperfine.md"
 
 build/bench_lookup: src/cpp/bench_lookup.cpp src/cpp/hash_table.cpp src/cpp/hash_table_naive.cpp src/cpp/hash_table_stdmap.cpp src/cpp/hash_table_prob.cpp

@@ -15,7 +15,7 @@ tinymole is a multithreaded dictionary-based password cracker that serves as a p
 
 Dictionary attacks are the dominant technique for recovering plaintext passwords from leaked hash databases. The attacker loads a large wordlist, computes the hash of each candidate, and checks whether it matches any target. At scale the bottleneck is rarely hashing speed (modern CPUs compute MD5 at several gigabytes per second) but rather the lookup that follows: the candidate hash must be tested against a table that, for a 14 million entry wordlist, occupies several hundred megabytes of RAM. When the table does not fit in L3 cache, each lookup incurs a main-memory access, and per-lookup latency climbs from single-digit nanoseconds to hundreds of nanoseconds.
 
-Tiny pointers, introduced by Bender, Farach-Colton, Kuszmaul, Kuszmaul, and Liu (2024), address this class of problem by observing that the pointer stored in each hash table slot need not encode the full pool offset unambiguously in isolation. If both the key and the pointer are used together at lookup time (a DEREFERENCE(key, ptr) operation), the key's many bits can resolve most of the ambiguity, leaving the pointer to carry only a logarithmically small residual. The theoretical result is that O(log log log n) bits suffice at a load factor of 0.99, versus 27 bits for a naive 128 MB pool at the same capacity.
+Tiny pointers, introduced by Bender, Conway, Farach-Colton, Kuszmaul, and Tagliavini (2024), address this class of problem by observing that the pointer stored in each hash table slot need not encode the full pool offset unambiguously in isolation. If both the key and the pointer are used together at lookup time (a DEREFERENCE(key, ptr) operation), the key's many bits can resolve most of the ambiguity, leaving the pointer to carry only a logarithmically small residual. The theoretical result is that Θ(log log log n + log k) bits suffice at load factor 1 - 1/k, versus 27 bits for a naive 128 MB pool at the same capacity. The log k term captures the space-time tradeoff: tighter load factors require wider pointers.
 
 This project implements four hash table variants on top of a shared cracker core and measures their performance across microbenchmarks (Google Benchmark, RDTSC), hardware counter profiling (perf stat), thread-scaling experiments, and end-to-end wall-clock timing (hyperfine). The implementations span the design space from a faithful bit-packed pointer format through a simplified probabilistic DEREFERENCE construction to the standard library baseline. All experiments use the full RockYou wordlist (14,344,391 entries) and a mid-list target that forces each run to scan roughly half the wordlist before finding a match.
 
@@ -31,9 +31,9 @@ The candidate list need not be presented in wordlist order. A frequency-analysis
 
 ### 2.2 Tiny Pointers
 
-Bender et al. (2024) define a tiny pointer as a compressed pointer that uses the key to resolve ambiguity at dereference time. Formally, an allocation scheme is given a universe of n items and a pool; ALLOCATE(v) places v in the pool and returns a tiny pointer p; DEREFERENCE(k, p) recovers v using both the key k and the pointer p. The key insight is that at the time of lookup the key is known and carries lg n bits of information, so the pointer only needs to encode the remaining O(log log log n) bits of position within a small local neighborhood. At n = 14 million, lg n is approximately 24 bits but log log log n is approximately 3 bits, a theoretical compression of 8x over a fully explicit pointer.
+Bender et al. (2024) define a tiny pointer as a compressed pointer that uses the key to resolve ambiguity at dereference time. Formally, an allocation scheme is given a universe of n items and a pool; ALLOCATE(v) places v in the pool and returns a tiny pointer p; DEREFERENCE(k, p) recovers v using both the key k and the pointer p. The key insight is that at the time of lookup the key is known and carries lg n bits of information, so the pointer only needs to encode the remaining Θ(log log log n + log k) bits of position within a small local neighborhood, where k controls the load factor (1 - 1/k). At n = 14 million and our realized load factor of ~0.43 (k ≈ 1.75), the bound evaluates to approximately 3 bits, versus lg n ≈ 24 bits for a fully explicit pointer: a theoretical compression of roughly 8x.
 
-The paper proves that a two-choice allocation scheme with O(log log n)-sized buckets achieves this bound with high probability. Our probabilistic implementation uses a simplified version of this construction with 6-bit pointers and buckets of size 16.
+The paper proves that a two-choice allocation scheme with bucket sizes that grow with k achieves this bound with high probability. Our probabilistic implementation uses a simplified version of this construction with 6-bit pointers and buckets of size 16.
 
 ---
 
@@ -104,7 +104,7 @@ The baseline wraps `std::unordered_map<std::array<uint8_t,16>, std::string>`, wh
 | Prob | 16 B | 6 (key-dependent) | O(1) expected | O(1) | Fixed 32 B slots |
 | std::unordered_map | ~140 B | 64 (heap pointer) | O(1) expected | O(1) | Heap per entry |
 
-All three custom implementations use open addressing with linear probing. Load factor is approximately 0.75 at 14.3 million entries. The theoretical minimum pointer width from Bender et al. at this scale is O(log log log n), approximately 3 bits.
+All three custom implementations use open addressing with linear probing. The table is sized to a power of two large enough to keep the realized load factor below 0.7 (the resize threshold); for 14.3 million entries this rounds up to 2^25 = 33.5 million slots, giving a realized load factor of approximately 0.43. The theoretical minimum pointer width from Bender et al. at this scale and load factor is Θ(log log log n + log k), approximately 3 bits.
 
 ---
 
@@ -112,11 +112,11 @@ All three custom implementations use open addressing with linear probing. Load f
 
 ### 5.1 Hardware and Software
 
-All benchmarks were run on a single workstation with a 4-core Intel CPU running at up to 4.1 GHz under the `performance` CPU frequency governor with Turbo Boost enabled. The cache hierarchy is 48 KiB L1d per core, 1280 KiB L2 per core, and 6144 KiB (6 MB) shared L3. The operating system is Linux 6.19.12 (Fedora 42). All binaries were compiled with GCC 15.2.1 at `-O2 -march=native`. OpenSSL 3.6.1 provides MD5 via the EVP interface.
+All benchmarks were run on a single workstation with an Intel Core i3-1115G4 (Tiger Lake, 2 physical cores with hyperthreading for 4 hardware threads) running at up to 4.1 GHz under the `performance` CPU frequency governor with Turbo Boost enabled. The cache hierarchy is 48 KiB L1d per core, 1280 KiB L2 per core, and 6144 KiB (6 MB) shared L3. The operating system is Linux 6.19.12 (Fedora 42). All binaries were compiled with GCC 15.2.0 at `-O2 -march=native`. OpenSSL 3.6.1 provides MD5 via the EVP interface.
 
 ### 5.2 Dataset
 
-The RockYou wordlist contains 14,344,391 entries totaling 134 MB. Passwords longer than 31 characters or containing null bytes are skipped at load time, affecting a negligible fraction of entries. The mid-list benchmark target is the MD5 of "jimmyisno1", which appears at approximately entry 7 million, forcing all threads to scan roughly half the wordlist before finding a match.
+The RockYou wordlist contains 14,344,391 entries totaling approximately 133 MiB (140 MB decimal). Passwords longer than 31 characters or containing null bytes are skipped at load time, affecting a negligible fraction of entries. The mid-list benchmark target is the MD5 of "jimmyisno1", which appears at approximately entry 7 million, forcing all threads to scan roughly half the wordlist before finding a match.
 
 ### 5.3 Benchmark Methodology
 
@@ -222,7 +222,7 @@ Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three
 
 ### 6.6 Thread Scaling
 
-Figure 6 shows cracker throughput in MH/s as thread count increases from 1 to 8. All implementations exhibit sub-linear scaling: TinyPtr goes from 2.88 MH/s at 1 thread to 3.61 MH/s at 4 threads (1.25x speedup) and 3.71 MH/s at 8 threads. The machine has 4 physical cores, so the 4-to-8 thread jump provides negligible gain, confirming that the workload saturates memory bandwidth before exhausting CPU capacity. Adding threads increases parallelism but also increases LLC miss rate as multiple threads compete for the shared 6 MB L3 cache.
+Figure 6 shows cracker throughput in MH/s as thread count increases from 1 to 8. All implementations exhibit sub-linear scaling: TinyPtr goes from 2.88 MH/s at 1 thread to 3.61 MH/s at 4 threads (1.25x speedup) and 3.71 MH/s at 8 threads. The machine has 2 physical cores with 2 hyperthreads each (4 hardware threads total), so 4 threads already fully populates the hardware contexts and 8 threads oversubscribes them. The flat region from 4 to 8 threads reflects this saturation combined with shared-L3 contention: adding threads increases parallelism but also increases the aggregate LLC miss rate as multiple threads compete for the 6 MB L3 cache.
 
 Prob shows the highest throughput at 8 threads (4.05 MH/s mean) despite its higher per-lookup latency, likely because its pool layout causes fewer sequential prefetch dependencies than the chained access pattern in StdMap.
 
@@ -256,9 +256,9 @@ The TinyPtr lead over Naive (1.12x) primarily reflects the difference in hit-pat
 
 ### 6.8 Memory Usage
 
-Figure 8 shows peak RSS measured with `/usr/bin/time -v`. TinyPtr and Naive are essentially identical at 679.6 MB each, confirming that the pointer encoding does not affect overall footprint when both implementations use the same variable-length pool. The hash table itself accounts for roughly 512 MB (2^25 = 33.5 million 16-byte slots at 0.75 load factor) and the pool for the remaining 168 MB.
+Figure 8 shows peak RSS measured with `/usr/bin/time -v`. TinyPtr and Naive are essentially identical at 679.6 MB each, confirming that the pointer encoding does not affect overall footprint when both implementations use the same variable-length pool. The hash table itself accounts for roughly 512 MB (2^25 = 33.5 million 16-byte slots) and the variable-length pool plus program overhead account for the remaining 168 MB.
 
-Prob uses 1,193.8 MB (1.76x TinyPtr). The increase comes from two sources: the fixed 32-byte pool slots consume 2x more space per entry than an average variable-length entry, and the two-level hash table (primary and secondary pools) increases the total slot count. StdMap uses 1,912.4 MB (2.81x), consistent with approximately 130 bytes of per-entry overhead from heap allocation, hash metadata, and pointer fields.
+Prob uses 1,193.8 MB (1.76x TinyPtr). The increase comes from two sources: the fixed 32-byte pool slots consume roughly 3x more space per entry than the average variable-length entry (RockYou's mean password length is 8.7 characters, so a typical TinyPtr pool entry is ~10 bytes vs Prob's 32 bytes), and the two-level hash table (primary and secondary pools) increases the total slot count. StdMap uses 1,912.4 MB (2.81x), consistent with approximately 130 bytes of per-entry overhead from heap allocation, hash metadata, and pointer fields.
 
 **Table 8: Peak Memory Usage (/usr/bin/time -v)**
 
@@ -279,11 +279,11 @@ Prob uses 1,193.8 MB (1.76x TinyPtr). The increase comes from two sources: the f
 
 **Prob's cache pressure undermines its pointer savings.** The probabilistic implementation achieves 6-bit pointers (versus 32-bit for TinyPtr and Naive) but incurs 2.5x more LLC cache misses per lookup. Two structural choices drive this: the fixed 32-byte pool slots waste space for short passwords (RockYou's median password is 7 characters), and the two-level bucket scheme causes lookups to probe both primary and secondary regions on a miss. The end result is that Prob is 1.25x slower end-to-end despite similar single-lookup latency in the throughput microbenchmark. Pointer compression only reduces cache pressure when it also reduces the physical footprint of the working set; fixed-size pool slots prevent that here.
 
-**Tail latency tradeoffs.** At p99.9, TinyPtr's tail (1873 ns) is 2.4x wider than Prob's (572 ns). Linear probing is susceptible to clustering at 0.75 load factor, and long runs appear occasionally in the miss path. Prob's two-level scheme provides a statistical bound on maximum bucket occupancy, keeping its tail tighter. For a batch offline cracker, median throughput matters more than tail latency and TinyPtr wins. For a latency-sensitive service, Prob's predictability would be preferable.
+**Tail latency tradeoffs.** At p99.9, TinyPtr's tail (1873 ns) is 2.4x wider than Prob's (572 ns). Linear probing is susceptible to clustering even at moderate load factors, and long runs appear occasionally in the miss path. Prob's two-level scheme provides a statistical bound on maximum bucket occupancy, keeping its tail tighter. For a batch offline cracker, median throughput matters more than tail latency and TinyPtr wins. For a latency-sensitive service, Prob's predictability would be preferable.
 
-**Sub-linear thread scaling.** Throughput grows from roughly 2.9 MH/s at 1 thread to 3.7 MH/s at 4 threads for TinyPtr, a 1.25x speedup for 4x the threads. Each lookup reads one 64-byte cache line from a 512 MB table, far exceeding the 6 MB L3 cache, so adding threads increases the aggregate miss rate proportionally. The practical implication is that more cores provide diminishing returns on this workload; a larger L3 cache or a table that fits in L3 would yield more meaningful throughput gains.
+**Sub-linear thread scaling.** Throughput grows from roughly 2.9 MH/s at 1 thread to 3.7 MH/s at 4 threads for TinyPtr, only a 1.25x speedup despite running on every available hardware context (2 cores × 2 hyperthreads). Each lookup reads one 64-byte cache line from a 512 MB table, far exceeding the 6 MB L3 cache, so adding threads increases the aggregate miss rate proportionally and the shared L3 becomes the binding constraint well before the cores do. The practical implication is that adding hardware threads provides diminishing returns on this workload; a larger L3 cache or a table that fits in L3 would yield more meaningful throughput gains than additional cores would.
 
-**Relationship to the paper.** The Bender et al. construction achieves O(log log log n), approximately 3 bits per pointer at n = 14.3 million. Our Prob implementation uses 6-bit pointers, which is closer to the theoretical target than the 32-bit naive pointer but still above the minimum. A true 3-bit implementation would require bucket sizes of O(log log n) (approximately 13 slots), tighter load factors, and a more careful secondary hash design to satisfy the high-probability bound. Whether that compression translates to a cache footprint small enough to outweigh the increased pool complexity is an open question at this scale.
+**Relationship to the paper.** The Bender et al. construction achieves Θ(log log log n + log k) bits per pointer, which for n = 14.3 million at our realized load factor of 0.43 is approximately 3 bits. Our Prob implementation uses 6-bit pointers, which is closer to the theoretical target than the 32-bit naive pointer but still above the minimum. A true 3-bit implementation would require larger bucket sizes, a tighter load factor (which increases the log k term), and a more careful secondary hash design to satisfy the high-probability bound. Whether that compression translates to a cache footprint small enough to outweigh the increased pool complexity is an open question at this scale.
 
 ---
 
@@ -297,7 +297,7 @@ We implemented and compared four hash table designs for a multithreaded dictiona
 
 3. The probabilistic DEREFERENCE implementation achieves 6-bit key-dependent pointers but incurs 2.5x higher LLC cache miss pressure due to fixed-size pool slots, making it 1.25x slower end-to-end than TinyPtr despite similar single-lookup throughput.
 
-4. Thread scaling is sub-linear across all designs, saturating at approximately 3.6-4.1 MH/s on a 4-core machine at 4-8 threads due to memory bandwidth saturation.
+4. Thread scaling is sub-linear across all designs, saturating at approximately 3.6-4.1 MH/s on a 2-core / 4-thread machine at 4-8 threads, reflecting full utilization of the hardware contexts combined with memory bandwidth saturation.
 
 5. At the p99.9 percentile, Prob's two-level scheme provides tighter tail latency (572 ns) than TinyPtr's linear-probing design (1873 ns), at the cost of higher mean latency and memory usage.
 
@@ -307,7 +307,7 @@ The core tension in this design space is that pointer compression is only valuab
 
 ## References
 
-Bender, M. A., Farach-Colton, M., Kuszmaul, J., Kuszmaul, W., and Liu, M. (2024). Tiny Pointers. *ACM Transactions on Algorithms*, 20(3), Article 23.
+Bender, M. A., Conway, A., Farach-Colton, M., Kuszmaul, W., and Tagliavini, G. (2024). Tiny Pointers. *ACM Transactions on Algorithms*, 21(4), Article 38, 1-43. https://doi.org/10.1145/3700594
 
 Google. (2024). Google Benchmark: A microbenchmark support library. https://github.com/google/benchmark
 

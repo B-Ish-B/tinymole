@@ -5,7 +5,7 @@
 [![Nix](https://img.shields.io/badge/built%20with-Nix-5277C3?logo=nixos&logoColor=white)](flake.nix)
 [![Last commit](https://img.shields.io/github/last-commit/B-Ish-B/tinymole)](https://github.com/B-Ish-B/tinymole/commits/main)
 
-Multithreaded dictionary password cracker with four hash table implementations, benchmarked against the full 14.3 million entry RockYou wordlist. Built around a bit-packed pointer design derived from [Bender et al. (ACM ToA, 2024)](https://arxiv.org/abs/2111.12800).
+Multithreaded dictionary password cracker with four hash table implementations, benchmarked against the full 14.3 million entry RockYou wordlist. Built around a bit-packed pointer design derived from [Bender et al. (ACM ToA, 2024)](https://doi.org/10.1145/3700594).
 
 ![TUI splash screen](docs/tui.png)
 
@@ -17,7 +17,7 @@ make tui
 
 ## Results
 
-Benchmarked on a 4-core Intel CPU (4.1 GHz, 6 MB L3) against all 14,344,391 RockYou entries. End-to-end times use 4 threads targeting a mid-list entry, mean of 5 hyperfine runs.
+Benchmarked on an Intel i3-1115G4 (Tiger Lake, 2 cores / 4 threads, 4.1 GHz boost, 6 MB L3) against all 14,344,391 RockYou entries. End-to-end times use 4 threads targeting a mid-list entry, mean of 5 hyperfine runs.
 
 | Implementation | Pointer | Miss (ns) | Hit (ns) | End-to-end (4t) | Memory |
 |---|---|---|---|---|---|
@@ -34,7 +34,7 @@ Benchmarked on a 4-core Intel CPU (4.1 GHz, 6 MB L3) against all 14,344,391 Rock
 
 ![Lookup latency by workload](results/figures/fig2_workload_comparison.png)
 
-Throughput saturates around 3.6-4.1 MH/s at 4 threads (memory-bandwidth bound, not CPU bound). Full analysis in [docs/write_up.md](docs/write_up.md).
+Throughput saturates around 3.6-4.1 MH/s at 4 threads, which fully populates the 2 cores × 2 hyperthreads of the test machine (memory-bandwidth bound, not CPU bound). Full analysis in [docs/write_up.md](docs/write_up.md).
 
 ---
 
@@ -154,4 +154,4 @@ Expected C++ output:
 
 ## References
 
-Bender, M. A., Farach-Colton, M., Kuszmaul, J., Kuszmaul, W., and Liu, M. (2024). Tiny Pointers. *ACM Transactions on Algorithms*, 20(3), Article 23. https://arxiv.org/abs/2111.12800
+Bender, M. A., Conway, A., Farach-Colton, M., Kuszmaul, W., and Tagliavini, G. (2024). Tiny Pointers. *ACM Transactions on Algorithms*, 21(4), Article 38, 1-43. https://doi.org/10.1145/3700594

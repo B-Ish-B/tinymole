@@ -104,7 +104,7 @@ The baseline wraps `std::unordered_map<std::array<uint8_t,16>, std::string>`, wh
 | Prob | 16 B | 6 (key-dependent) | O(1) expected | O(1) | Fixed 32 B slots |
 | std::unordered_map | ~140 B | 64 (heap pointer) | O(1) expected | O(1) | Heap per entry |
 
-All three custom implementations use open addressing with linear probing. The table is sized to a power of two large enough to keep the realized load factor below 0.7 (the resize threshold); for 14.3 million entries this rounds up to 2^25 = 33.5 million slots, giving a realized load factor of approximately 0.43. The theoretical minimum pointer width from Bender et al. at this scale and load factor is Θ(log log log n + log k), approximately 3 bits.
+TinyPtr and Naive use simple linear probing across a single open-addressed table. Prob uses linear probing within a fixed-size bucket of 16 plus a two-choice fallback to a secondary bucket region when the primary bucket is full. For all three, the table is sized to a power of two large enough to keep the realized load factor below 0.7 (the resize threshold); for 14.3 million entries this rounds up to 2^25 = 33.5 million slots, giving a realized load factor of approximately 0.43. The theoretical minimum pointer width from Bender et al. at this scale and load factor is Θ(log log log n + log k), approximately 3 bits.
 
 ---
 
@@ -207,7 +207,7 @@ Branch mispredictions cluster near 0.89 per lookup for TinyPtr, Naive, and StdMa
 
 ### 6.5 Tail Latency
 
-Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three custom implementations are indistinguishable (91-94 ns, elevated from the Google Benchmark throughput numbers because the `lfence`/`rdtscp` barriers around each sample prevent the CPU from overlapping consecutive lookups, eliminating the speculative parallelism that Google Benchmark's amortized timing implicitly captures). At p99 they remain close (405-425 ns). At p99.9 a divergence appears: TinyPtr's tail widens to 1873 ns while Naive and Prob are substantially tighter at 768 and 572 ns respectively. The TinyPtr p99.9 tail reflects occasional long probing chains in the open-addressed table; Prob's two-level scheme distributes load more evenly, keeping its tail narrower. StdMap's p99.9 latency is 8490 ns (14.8x higher than Prob's), driven by deep chained-bucket lists from hash collisions and the random page distribution of separately-allocated nodes.
+Table 4 reports RDTSC percentile latency for the miss workload. At p50 all three custom implementations are indistinguishable (91-94 ns, elevated from the Google Benchmark throughput numbers because the `lfence`/`rdtscp` barriers around each sample prevent the CPU from overlapping consecutive lookups, eliminating the speculative parallelism that Google Benchmark's amortized timing implicitly captures). At p99 they remain close (405-425 ns). Past p99 the picture is noisier. TinyPtr and Naive use the same open-addressed table and probing logic, so their tail latency should track each other on the miss path; in fact their distributions are essentially identical from p50 through p99 (within 3%). Their p99.9 values diverge (TinyPtr 1873 ns vs Naive 768 ns) but their maxima reverse the order (TinyPtr 15793 ns vs Naive 40734 ns), and with a single 2-million-sample run the p99.9 estimate is based on only ~2000 samples in a heavy-tailed regime; the TinyPtr-vs-Naive divergence at that percentile is consistent with sampling noise rather than a structural difference. The robust finding is Prob's narrower tail: at p99.9 Prob is 572 ns, ~30% tighter than Naive and 70% tighter than TinyPtr, which reflects the two-level scheme's statistical bound on maximum bucket occupancy. StdMap's p99.9 latency is 8490 ns (14.8x higher than Prob's), driven by deep chained-bucket lists from hash collisions and the random page distribution of separately-allocated nodes.
 
 **Table 4: RDTSC Percentile Latency, Miss Workload (ns, 2M samples, 500K warmup)**
 
@@ -239,9 +239,11 @@ At 4 threads (the point where every hardware context is exactly populated) all t
 
 ### 6.7 End-to-End Crack Time
 
-Table 7 reports hyperfine wall-clock timing for a 4-thread crack of the mid-list target. TinyPtr completes in 9.226 s (mean, +/- 0.518 s), the fastest of the four. Naive takes 10.317 s (1.12x), Prob 11.501 s (1.25x), and StdMap 17.177 s (1.86x).
+Table 8 reports hyperfine wall-clock timing for a 4-thread crack of the mid-list target. TinyPtr completes in 9.226 s (mean, +/- 0.518 s), the fastest of the four. Naive takes 10.317 s (1.12x), Prob 11.501 s (1.25x), and StdMap 17.177 s (1.86x).
 
-Decomposing the end-to-end time using the cracker_bench lookup-only timing (Table 6, mean of 3 runs at 4 threads) shows that the implementations differ mainly in table-construction cost:
+Subtracting the cracker_bench lookup-only timing (Table 6, mean of 3 runs at 4 threads) from the hyperfine end-to-end times isolates the table-construction cost (Table 7). All four implementations finish the lookup phase in essentially the same wall time (2.0-2.1 s; Prob is slightly faster due to its higher 4-thread MH/s). The end-to-end gaps map almost one-to-one onto load-time differences: Prob's two-level allocator (primary buckets plus two-choice secondary placement) and 1.76x larger pool take 2.4 s longer to populate, and StdMap's 14.3 million per-entry heap allocations add nearly 8 s. The structural advantage of the bit-packed TinyPtr design on this workload therefore shows up in build-time throughput, not in per-lookup speed during the parallel scan.
+
+**Table 7: Load vs Lookup Decomposition (derived from Tables 6 and 8)**
 
 | Implementation | Lookup phase | End-to-end | Table load (e2e - lookup) | Δ load vs TinyPtr |
 |---|---|---|---|---|
@@ -250,9 +252,7 @@ Decomposing the end-to-end time using the cracker_bench lookup-only timing (Tabl
 | Prob | 1.88 s | 11.50 s | 9.62 s | +2.43 s |
 | std::unordered_map | 2.07 s | 17.18 s | 15.11 s | +7.92 s |
 
-All four implementations finish the lookup phase in essentially the same wall time (2.0-2.1 s; Prob is slightly faster due to its higher 4-thread MH/s). The end-to-end gaps map almost one-to-one onto load-time differences: Prob's two-level allocator (primary buckets plus two-choice secondary placement) and 1.76x larger pool take 2.4 s longer to populate, and StdMap's 14.3 million per-entry heap allocations add nearly 8 s. The structural advantage of the bit-packed TinyPtr design on this workload therefore shows up in build-time throughput, not in per-lookup speed during the parallel scan.
-
-**Table 7: End-to-End Wall Time (hyperfine, 5 runs, 2 warmups, 4 threads)**
+**Table 8: End-to-End Wall Time (hyperfine, 5 runs, 2 warmups, 4 threads)**
 
 | Implementation | Mean (s) | Stddev (s) | Min (s) | Max (s) | vs. TinyPtr |
 |---|---|---|---|---|---|
@@ -269,7 +269,7 @@ Figure 8 shows peak RSS measured with `/usr/bin/time -v`. TinyPtr and Naive are 
 
 Prob uses 1,193.8 MB (1.76x TinyPtr). The increase comes from two sources: the fixed 32-byte pool slots consume roughly 3x more space per entry than the average variable-length entry (RockYou's mean password length is 8.7 characters, so a typical TinyPtr pool entry is ~10 bytes vs Prob's 32 bytes), and the two-level hash table (primary and secondary pools) increases the total slot count. StdMap uses 1,912.4 MB (2.81x), consistent with approximately 130 bytes of per-entry overhead from heap allocation, hash metadata, and pointer fields.
 
-**Table 8: Peak Memory Usage (/usr/bin/time -v)**
+**Table 9: Peak Memory Usage (/usr/bin/time -v)**
 
 | Implementation | RSS (MB) | vs. TinyPtr |
 |---|---|---|
@@ -286,7 +286,7 @@ Prob uses 1,193.8 MB (1.76x TinyPtr). The increase comes from two sources: the f
 
 **Why TinyPtr beats Naive on hits but not misses.** Both implementations use identical 16-byte slots and the same pool structure, so their miss paths are indistinguishable at the instruction level. The difference is entirely on the hit path: TinyPtr's `tiny_ptr` word contains both the pool offset (27 bits) and the password length (5 bits), allowing `string_view` construction with two register operations and no pool access. Naive stores only a raw offset and must call `strlen` on the pool pointer, which scans pool memory sequentially. For passwords averaging 8-10 characters this adds one cache-line touch and a short loop, explaining the 2x latency difference (13.9 vs 27.7 ns). Inlining metadata into the pointer (even at the cost of constraining maximum pool size to 128 MB) eliminates a dependent memory access on the hot path.
 
-**Prob's end-to-end slowdown is in load time, not lookup.** Once perf counters are scoped to the lookup loop alone, all three custom implementations show nearly identical LLC miss rates (5.2-5.4 per lookup) and dTLB miss rates (about 1 per lookup), and at 4 threads they all finish the cracker's lookup phase in essentially the same wall time (within 0.15 s of each other; Prob is actually marginally faster than TinyPtr). The 1.25x end-to-end slowdown for Prob therefore cannot be explained by per-lookup cost: arithmetic alone makes that clear, since 7 million lookups times the 19.5 ns hit-path gap divided across 4 threads is only ~34 ms, two orders of magnitude smaller than the observed 2.27 s end-to-end gap. The actual driver is table-construction time: Prob's allocator runs the two-choice secondary placement scheme on overflow, initializes both a primary and a secondary bucket region, and writes 1.76x more pool bytes than TinyPtr's variable-length pool. Loading 14.3 million entries through that path takes ~9.6 s versus ~7.2 s for TinyPtr (Table in §6.7), accounting for nearly all of the observed end-to-end difference. The microbenchmark hit-path gap (33.4 ns vs 13.9 ns) is real but does not materialize end-to-end on this workload because each cracker iteration also performs an MD5 computation that dominates per-iteration cost and because lookup parallelism at 4 threads is bounded by memory bandwidth rather than per-query latency.
+**Prob's end-to-end slowdown is in load time, not lookup.** Once perf counters are scoped to the lookup loop alone, all three custom implementations show nearly identical LLC miss rates (5.2-5.4 per lookup) and dTLB miss rates (about 1 per lookup), and at 4 threads they all finish the cracker's lookup phase in essentially the same wall time (within 0.15 s of each other; Prob is actually marginally faster than TinyPtr). The 1.25x end-to-end slowdown for Prob therefore cannot be explained by per-lookup cost: arithmetic alone makes that clear, since 7 million lookups times the 19.5 ns hit-path gap divided across 4 threads is only ~34 ms, two orders of magnitude smaller than the observed 2.27 s end-to-end gap. The actual driver is table-construction time: Prob's allocator runs the two-choice secondary placement scheme on overflow, initializes both a primary and a secondary bucket region, and writes 1.76x more pool bytes than TinyPtr's variable-length pool. Loading 14.3 million entries through that path takes ~9.6 s versus ~7.2 s for TinyPtr (Table 7), accounting for nearly all of the observed end-to-end difference. The microbenchmark hit-path gap (33.4 ns vs 13.9 ns) is real but does not materialize end-to-end on this workload because each cracker iteration also performs an MD5 computation that dominates per-iteration cost and because lookup parallelism at 4 threads is bounded by memory bandwidth rather than per-query latency.
 
 **Tail latency tradeoffs.** At p99.9, TinyPtr's tail (1873 ns) is 3.3x wider than Prob's (572 ns) and 2.4x wider than Naive's (768 ns). Linear probing is susceptible to clustering even at moderate load factors, and long runs appear occasionally in the miss path. Prob's two-level scheme provides a statistical bound on maximum bucket occupancy, keeping its tail tighter. For a batch offline cracker, median throughput matters more than tail latency and TinyPtr wins. For a latency-sensitive service, Prob's predictability would be preferable.
 
@@ -308,7 +308,7 @@ We implemented and compared four hash table designs for a multithreaded dictiona
 
 4. Thread scaling is sub-linear across all designs, saturating at approximately 3.6-4.1 MH/s on a 2-core / 4-thread machine at 4-8 threads, reflecting full utilization of the hardware contexts combined with memory bandwidth saturation.
 
-5. At the p99.9 percentile, Prob's two-level scheme provides tighter tail latency (572 ns) than TinyPtr's linear-probing design (1873 ns), at the cost of higher mean latency and memory usage.
+5. At the p99.9 percentile, Prob's two-level scheme provides tighter tail latency (572 ns) than TinyPtr's flat linear-probing design (1873 ns), at the cost of higher hit-path latency (33.4 vs 13.9 ns) and 1.76x memory usage. Mean miss latency is essentially tied across all three custom designs.
 
 The core tension in this design space is that pointer compression is only valuable when it reduces the physical size of the working set. A 6-bit pointer paired with a bloated pool is Pareto-dominated on memory and load time by a 32-bit pointer paired with a compact one, even when their lookup-phase cache behavior is comparable. A variable-length DEREFERENCE-compatible pool that preserves the space savings of the tiny pointer construction would be needed to close this gap.
 

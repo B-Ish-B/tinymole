@@ -19,12 +19,12 @@ make tui
 
 Benchmarked on an Intel i3-1115G4 (Tiger Lake, 2 cores / 4 threads, 4.1 GHz boost, 6 MB L3) against all 14,344,391 RockYou entries. End-to-end times use 4 threads targeting a mid-list entry, mean of 5 hyperfine runs.
 
-| Implementation | Pointer | Miss (ns) | Hit (ns) | End-to-end (4t) | Memory |
+| Implementation | Pointer | Miss (ns) | Hit (ns) | End-to-end (4t) | Memory (MiB) |
 |---|---|---|---|---|---|
-| TinyPtr (bit-packed) | 27-bit offset + 5-bit length | 44.5 | **13.9** | **9.2 s** | 680 MB |
-| Naive (full offset) | 32-bit raw offset | **42.7** | 27.7 | 10.3 s | 680 MB |
-| Prob (key-dependent) | 6-bit DEREFERENCE | 43.8 | 33.4 | 11.5 s | 1194 MB |
-| std::unordered_map | 64-bit heap pointer | 305.9 | 392.5 | 17.2 s | 1912 MB |
+| TinyPtr (bit-packed) | 27-bit offset + 5-bit length | 44.5 | **13.9** | **9.2 s** | 680 |
+| Naive (full offset) | 32-bit raw offset | **42.7** | 27.7 | 10.3 s | 680 |
+| Prob (key-dependent) | 6-bit DEREFERENCE | 43.8 | 33.4 | 11.5 s | 1194 |
+| std::unordered_map | 64-bit heap pointer | 305.9 | 392.5 | 17.2 s | 1912 |
 
 - All three custom tables beat `std::unordered_map` by **6.9x** on miss latency and **1.86x** end-to-end.
 - TinyPtr achieves **2.0x faster hit lookups** than Naive by encoding password length in the pointer, eliminating one dependent pool read.
@@ -35,14 +35,39 @@ Benchmarked on an Intel i3-1115G4 (Tiger Lake, 2 cores / 4 threads, 4.1 GHz boos
 
 ![Lookup latency by workload](results/figures/fig2_workload_comparison.png)
 
-Throughput saturates around 3.6-4.1 MH/s at 4 threads, which fully populates the 2 cores × 2 hyperthreads of the test machine (memory-bandwidth bound, not CPU bound). Full analysis in [docs/write_up.md](docs/write_up.md).
+Throughput saturates around 3.6-4.1 MH/s at 4 threads, which fully populates the 2 cores × 2 hyperthreads of the test machine (memory-subsystem bound, not CPU bound). Full analysis in [docs/write_up.md](docs/write_up.md).
+
+---
+
+## Setup
+
+### Linux and macOS
+
+Install Nix (if not already installed) and enable flakes + direnv:
+
+```bash
+sh <(curl -L https://nixos.org/nix/install) --daemon
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+nix profile install nixpkgs#direnv
+eval "$(direnv hook bash)"   # or zsh
+```
+
+### Windows (WSL2)
+
+```powershell
+wsl --install   # PowerShell, Administrator
+```
+
+Then inside WSL2, follow the Linux/macOS steps above. Clone inside the WSL2 home directory, not `/mnt/c/`.
 
 ---
 
 ## Quick Start
 
+After Setup is done:
+
 ```bash
-git clone <repo> && cd tinymole
+git clone https://github.com/B-Ish-B/tinymole.git && cd tinymole
 direnv allow && uv sync
 make all && make test
 ./build/cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --wordlist data/test_wordlist.txt
@@ -57,37 +82,6 @@ make crack HASH=<hex>
 
 ---
 
-## Setup
-
-### Linux and macOS
-
-```bash
-echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-eval "$(direnv hook bash)"   # or zsh
-
-# after cloning
-direnv allow && uv sync
-make all && make test
-```
-
-### Windows (WSL2)
-
-```powershell
-wsl --install   # PowerShell, Administrator
-```
-
-Inside WSL2:
-
-```bash
-sh <(curl -L https://nixos.org/nix/install) --daemon
-echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
-nix profile install nixpkgs#direnv && eval "$(direnv hook bash)"
-```
-
-Clone inside the WSL2 home directory (not `/mnt/c/`) and follow the Linux steps above.
-
----
-
 ## Usage
 
 ```
@@ -95,7 +89,7 @@ Clone inside the WSL2 home directory (not `/mnt/c/`) and follow the Linux steps 
 
   --hash       <hex>   target hash (required)
   --algo       <name>  md5 | sha1 | sha256  (default: md5)
-  --wordlist   <path>  wordlist for the lookup table  (default: data/rockyou.txt)
+  --wordlist   <path>  wordlist for the lookup table  (default: data/rockyou_1m.txt)
   --candidates <path>  ranked candidate order  (defaults to wordlist)
   --threads    <n>     worker threads  (default: 4)
   --log-path   <path>  log file  (default: logs/cracker.log)
@@ -114,7 +108,7 @@ make crack HASH=<hex>   # uses candidates_ranked.txt automatically
 
 | Target | What it does |
 |---|---|
-| `make all` | Release build (`-O2 -march=native`) |
+| `make all` | Release build (`-O2`) |
 | `make test` | Build and run all unit tests |
 | `make bench` | Google Benchmark throughput (miss/hit/mixed, 5 reps) |
 | `make latency` | RDTSC latency percentiles, 2M samples |

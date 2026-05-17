@@ -1,7 +1,31 @@
 [project]
 name = "tinymole"
 version = "0.1.0"
+description = "Multithreaded dictionary password cracker comparing four hash table designs under a realistic 14.3M-entry RockYou workload"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Ismail Alwahsh" },
+]
 requires-python = ">=3.11"
+keywords = [
+    "password-cracking",
+    "hash-tables",
+    "tiny-pointers",
+    "benchmarks",
+    "open-addressing",
+    "performance-engineering",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Scientific/Engineering",
+]
 dependencies = [
     "httpx>=0.27.0",
     "matplotlib>=3.9.0",
@@ -9,6 +33,11 @@ dependencies = [
     "pyfiglet>=1.0.2",
     "scipy>=1.17.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/B-Ish-B/tinymole"
+Repository = "https://github.com/B-Ish-B/tinymole"
+Issues = "https://github.com/B-Ish-B/tinymole/issues"
 
 [dependency-groups]
 dev = [

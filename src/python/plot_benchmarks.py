@@ -1,6 +1,6 @@
 """
 Benchmark analysis and figure generation for the tinymole password cracker.
-Run from the project root: uv run python3 results/plot_benchmarks.py
+Run from the project root: uv run python3 src/python/plot_benchmarks.py
 """
 
 import matplotlib

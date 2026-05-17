@@ -5,13 +5,14 @@
 [![Nix](https://img.shields.io/badge/built%20with-Nix-5277C3?logo=nixos&logoColor=white)](flake.nix)
 [![Last commit](https://img.shields.io/github/last-commit/B-Ish-B/tinymole)](https://github.com/B-Ish-B/tinymole/commits/main)
 
-Multithreaded dictionary password cracker with four hash table implementations, benchmarked against the full 14.3 million entry RockYou wordlist. Built around a bit-packed pointer design derived from [Bender et al. (ACM ToA, 2024)](https://doi.org/10.1145/3700594).
+Multithreaded dictionary password cracker comparing four hash table implementations under a realistic 14.3-million-entry RockYou workload. Built around a bit-packed pointer design derived from [Bender et al. (ACM ToA, 2024)](https://doi.org/10.1145/3700594).
+
+- Four hash table designs: bit-packed 32-bit pointer, naive 32-bit offset, 6-bit key-dependent (DEREFERENCE), and `std::unordered_map` baseline
+- Open addressing with linear probing; 96-bit truncated MD5 keys
+- Multi-threaded cracker with frequency-ranked candidate ordering
+- Benchmarks: Google Benchmark, RDTSC percentiles, `perf_event_open` counters, `hyperfine` wall time
 
 ![TUI splash screen](docs/tui.png)
-
-```bash
-make tui
-```
 
 ---
 
@@ -122,7 +123,7 @@ Regenerate all figures after running benchmarks:
 
 ```bash
 make bench && make latency && make hyperfine
-uv run python3 results/plot_benchmarks.py
+uv run python3 src/python/plot_benchmarks.py
 ```
 
 ---

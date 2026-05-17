@@ -8,7 +8,7 @@
 set -euo pipefail
 
 N=7
-PROJ="$(cd "$(dirname "$0")" && pwd)"
+PROJ="$(cd "$(dirname "$0")/.." && pwd)"
 
 for impl in tinyptr naive prob stdmap; do
     bin="${PROJ}/build/perf_${impl}"

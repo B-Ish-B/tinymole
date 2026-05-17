@@ -12,15 +12,20 @@ ALGO     ?= md5
 THREADS  ?= 4
 WORDLIST ?= data/rockyou.txt
 
-.PHONY: all debug tsan test bench hyperfine latency crack lookup tui clean
+.PHONY: all debug tsan test bench hyperfine latency crack lookup tui clean help
 
-all: build/cracker
+help:  ## Show this help message and the list of targets
+	@echo "Usage: make <target> [HASH=<hex>] [ALGO=md5|sha1|sha256] [THREADS=<n>] [WORDLIST=<path>]"
+	@echo ""
+	@echo "Targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "} {printf "  %-20s %s\n", $$1, $$2}'
 
-debug: build/cracker_debug
+all: build/cracker  ## Release build of the cracker (-O2)
 
-tsan: build/cracker_tsan
+debug: build/cracker_debug  ## Debug build with AddressSanitizer + UBSan
+tsan: build/cracker_tsan  ## Build with ThreadSanitizer
 
-test: build/test_tiny_ptr build/test_hash_table build/test_hash_table_naive build/test_hash_table_stdmap build/test_hash_table_prob build/test_cracker
+test: build/test_tiny_ptr build/test_hash_table build/test_hash_table_naive build/test_hash_table_stdmap build/test_hash_table_prob build/test_cracker  ## Build and run all C++ unit tests
 	./build/test_tiny_ptr
 	./build/test_hash_table
 	./build/test_hash_table_naive
@@ -78,12 +83,12 @@ BENCH_HASH    ?= 1637ff9c1826eb09071d234ea6b5563b
 BENCH_THREADS ?= 4
 HYPERFINE     := $(shell which hyperfine 2>/dev/null || echo /nix/store/fqz9ffja5czl5zrd2bg88ik8axr2pi7i-hyperfine-1.20.0/bin/hyperfine)
 
-bench: build/bench_lookup build/perf_tinyptr build/perf_naive build/perf_stdmap build/perf_prob
+bench: build/bench_lookup build/perf_tinyptr build/perf_naive build/perf_stdmap build/perf_prob  ## Google Benchmark throughput (miss/hit/mixed, 5 reps)
 	mkdir -p results
 	./build/bench_lookup --benchmark_repetitions=5 --benchmark_format=csv > results/benchmark.csv
 	@echo "Results written to results/benchmark.csv"
 
-hyperfine: build/cracker_bench
+hyperfine: build/cracker_bench  ## End-to-end wall-clock timing with hyperfine (5 runs, 2 warmups)
 	mkdir -p results
 	$(HYPERFINE) \
 	  --warmup 2 \
@@ -122,24 +127,24 @@ build/bench_latency: src/cpp/bench_latency.cpp src/cpp/hash_table.cpp \
 	mkdir -p build
 	$(CXX) $(CXXFLAGS_RELEASE) -I. $^ -o $@ $(LDFLAGS)
 
-latency: build/bench_latency
+latency: build/bench_latency  ## RDTSC latency percentiles (2M samples after 500K warmup)
 	mkdir -p results
 	./build/bench_latency | tee results/latency_percentiles.txt
 	@echo "Results written to results/latency_percentiles.txt"
 
-crack: build/cracker data/candidates_ranked.txt
+crack: build/cracker data/candidates_ranked.txt  ## Run the cracker against HASH (requires HASH=<hex>)
 	@if [ -z "$(HASH)" ]; then echo "error: HASH is required. Usage: make crack HASH=<hex>"; exit 1; fi
 	./build/cracker --hash $(HASH) --algo $(ALGO) --wordlist $(WORDLIST) --candidates data/candidates_ranked.txt --threads $(THREADS)
 
-tui: build/cracker
+tui: build/cracker  ## Launch the interactive terminal UI
 	uv run src/python/tui.py
 
-lookup:
+lookup:  ## Online weakpass.com lookup for HASH (requires HASH=<hex>)
 	@if [ -z "$(HASH)" ]; then echo "error: HASH is required. Usage: make lookup HASH=<hex>"; exit 1; fi
 	uv run src/python/weakpass_lookup.py --hash $(HASH) --algo $(ALGO)
 
 data/candidates_ranked.txt: data/rockyou.txt
 	uv run src/python/frequency_analysis.py
 
-clean:
+clean:  ## Remove build artifacts
 	rm -rf build

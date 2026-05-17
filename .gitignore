@@ -10,9 +10,6 @@ __pycache__/
 build/
 *.o
 *.a
-cracker
-cracker_tinyptr
-cracker_stdmap
 .direnv
 
 data/weakpass_cache.json

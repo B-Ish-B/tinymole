@@ -129,6 +129,7 @@ uv run python3 src/python/plot_benchmarks.py
 ```
 
 ---
+
 ## References
 
 Bender, M. A., Conway, A., Farach-Colton, M., Kuszmaul, W., and Tagliavini, G. (2024). Tiny Pointers. *ACM Transactions on Algorithms*, 21(4), Article 38, 1-43. https://doi.org/10.1145/3700594

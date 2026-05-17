@@ -126,14 +126,6 @@ uv run python3 results/plot_benchmarks.py
 ```
 
 ---
-
-## Tests
-
-```bash
-make test        
-uv run pytest -v 
-```
-
 ## References
 
 Bender, M. A., Conway, A., Farach-Colton, M., Kuszmaul, W., and Tagliavini, G. (2024). Tiny Pointers. *ACM Transactions on Algorithms*, 21(4), Article 38, 1-43. https://doi.org/10.1145/3700594

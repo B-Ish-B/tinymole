@@ -1,5 +1,6 @@
 # tinymole
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9d776d2ae8414fdb831b2f6a5d60c8f4)](https://app.codacy.com/gh/B-Ish-B/tinymole?utm_source=github.com&utm_medium=referral&utm_content=B-Ish-B/tinymole&utm_campaign=Badge_Grade)
 [![CI](https://img.shields.io/github/actions/workflow/status/B-Ish-B/tinymole/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=white&labelColor=363636&color=4c1&label=CI)](https://github.com/B-Ish-B/tinymole/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-007ec6?style=flat&logo=opensourceinitiative&logoColor=white&labelColor=363636)](LICENSE)
 [![C++17](https://img.shields.io/badge/language-C%2B%2B17-e67e22?style=flat&logo=cplusplus&logoColor=white&labelColor=363636)](https://en.cppreference.com/w/cpp/17)

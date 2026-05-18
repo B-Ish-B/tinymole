@@ -1,10 +1,13 @@
 # tinymole
 
-[![CI](https://github.com/B-Ish-B/tinymole/actions/workflows/ci.yml/badge.svg)](https://github.com/B-Ish-B/tinymole/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![OpenSSL](https://img.shields.io/badge/crypto-OpenSSL%203.x-red?logo=openssl&logoColor=white)](https://www.openssl.org/)
-[![Nix](https://img.shields.io/badge/built%20with-Nix-5277C3?logo=nixos&logoColor=white)](flake.nix)
-[![Last commit](https://img.shields.io/github/last-commit/B-Ish-B/tinymole)](https://github.com/B-Ish-B/tinymole/commits/main)
+[![CI](https://img.shields.io/github/actions/workflow/status/B-Ish-B/tinymole/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=white&labelColor=24292e&label=CI)](https://github.com/B-Ish-B/tinymole/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat&logo=opensourceinitiative&logoColor=white&labelColor=24292e)](LICENSE)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?style=flat&logo=cplusplus&logoColor=white&labelColor=24292e)](https://en.cppreference.com/w/cpp/17)
+[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat&logo=python&logoColor=white&labelColor=24292e)](https://www.python.org/)
+[![Nix](https://img.shields.io/badge/built%20with-Nix-5277C3?style=flat&logo=nixos&logoColor=white&labelColor=24292e)](flake.nix)
+[![OpenSSL](https://img.shields.io/badge/crypto-OpenSSL%203.x-EE2F2F?style=flat&logo=openssl&logoColor=white&labelColor=24292e)](https://www.openssl.org/)
+[![CodeFactor](https://www.codefactor.io/repository/github/b-ish-b/tinymole/badge?style=flat)](https://www.codefactor.io/repository/github/b-ish-b/tinymole)
+[![Last commit](https://img.shields.io/github/last-commit/B-Ish-B/tinymole?style=flat&logo=git&logoColor=white&labelColor=24292e)](https://github.com/B-Ish-B/tinymole/commits/main)
 
 Multithreaded dictionary password cracker comparing four hash table implementations under a realistic 14.3-million-entry RockYou workload. Built around a bit-packed pointer design derived from [Bender et al. (ACM ToA, 2024)](https://doi.org/10.1145/3700594).
 

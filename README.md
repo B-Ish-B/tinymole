@@ -1,13 +1,37 @@
 # tinymole
 
-[![CI](https://img.shields.io/github/actions/workflow/status/B-Ish-B/tinymole/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=white&labelColor=363636&color=4c1&label=CI)](https://github.com/B-Ish-B/tinymole/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-007ec6?style=flat&logo=opensourceinitiative&logoColor=white&labelColor=363636)](LICENSE)
-[![C++17](https://img.shields.io/badge/language-C%2B%2B17-e67e22?style=flat&logo=cplusplus&logoColor=white&labelColor=363636)](https://en.cppreference.com/w/cpp/17)
-[![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat&logo=python&logoColor=white&labelColor=363636)](https://www.python.org/)
-[![Nix](https://img.shields.io/badge/built%20with-Nix-5277C3?style=flat&logo=nixos&logoColor=white&labelColor=363636)](flake.nix)
-[![OpenSSL](https://img.shields.io/badge/crypto-OpenSSL%203.x-EE2F2F?style=flat&logo=openssl&logoColor=white&labelColor=363636)](https://www.openssl.org/)
-[![CodeFactor](https://www.codefactor.io/repository/github/b-ish-b/tinymole/badge?style=flat&labelColor=363636)](https://www.codefactor.io/repository/github/b-ish-b/tinymole)
-[![Last commit](https://img.shields.io/github/last-commit/B-Ish-B/tinymole?style=flat&logo=git&logoColor=white&labelColor=363636&color=4c1)](https://github.com/B-Ish-B/tinymole/commits/main)
+<div align="center">
+  <a href="https://github.com/B-Ish-B/tinymole/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/B-Ish-B/tinymole/ci.yml?branch=main&label=CI&style=flat-square&logo=githubactions&logoColor=white" alt="ci" />
+  </a>
+  <a href="https://github.com/B-Ish-B/tinymole/commits/main">
+    <img src="https://img.shields.io/github/last-commit/B-Ish-B/tinymole?style=flat-square&logo=git&logoColor=white" alt="last-commit" />
+  </a>
+</div>
+
+<div align="center">
+  <a href="https://www.codefactor.io/repository/github/b-ish-b/tinymole">
+    <img src="https://img.shields.io/codefactor/grade/github/b-ish-b/tinymole?logo=codefactor&style=flat-square" alt="CodeFactor" />
+  </a>
+  <a href="https://www.openssl.org/">
+    <img src="https://img.shields.io/badge/crypto-OpenSSL%203.x-red.svg?style=flat-square&logo=openssl&logoColor=white" alt="openssl" />
+  </a>
+  <a href="flake.nix">
+    <img src="https://img.shields.io/badge/built%20with-Nix-5277C3.svg?style=flat-square&logo=nixos&logoColor=white" alt="nix" />
+  </a>
+  <a href="https://www.python.org/">
+    <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg?style=flat-square&logo=python&logoColor=white" alt="python" />
+  </a>
+</div>
+
+<div align="center">
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="license" />
+  </a>
+  <a href="https://en.wikipedia.org/wiki/C%2B%2B17">
+    <img src="https://img.shields.io/badge/language-C%2B%2B17-red.svg?style=flat-square" alt="language" />
+  </a>
+</div>
 
 Multithreaded dictionary password cracker comparing four hash table implementations under a realistic 14.3-million-entry RockYou workload. Built around a bit-packed pointer design derived from [Bender et al. (ACM ToA, 2024)](https://doi.org/10.1145/3700594).
 
